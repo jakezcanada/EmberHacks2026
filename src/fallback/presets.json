@@ -1,0 +1,247 @@
+[
+  {
+    "id": "lofi-melody-drums",
+    "analysis": {
+      "tempo": 84,
+      "key": "D minor",
+      "time_signature": "4/4",
+      "mood": ["melancholic", "reflective"],
+      "genre_hint": "lo-fi hip hop",
+      "energy_curve": [0.2, 0.35, 0.6, 0.45],
+      "provided": "melody",
+      "generated": "drums"
+    },
+    "groove": { "swing": 0.2, "humanize": 0.3 },
+    "drums": {
+      "bars": 2,
+      "kick":  [1,0,0,0, 0,0,1,0, 0,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,0,0, 0,1,0,0, 0,0,1,0],
+      "snare": [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      "hat":   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1, 1,0,1,0, 1,0,1,0, 1,0,1,0, 1,1,1,0],
+      "clap":  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+      "perc":  [0,0,0,0, 0,0,0,1, 0,0,1,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,1,0]
+    },
+    "melody": [
+      { "pitch": "D4", "start": 0.0, "dur": 0.75, "vel": 0.8 },
+      { "pitch": "F4", "start": 1.0, "dur": 0.75, "vel": 0.75 },
+      { "pitch": "A4", "start": 2.0, "dur": 1.5, "vel": 0.85 },
+      { "pitch": "G4", "start": 4.0, "dur": 0.75, "vel": 0.7 },
+      { "pitch": "F4", "start": 5.0, "dur": 0.75, "vel": 0.75 },
+      { "pitch": "E4", "start": 6.0, "dur": 1.5, "vel": 0.7 }
+    ],
+    "bass": [
+      { "pitch": "D2", "start": 0.0, "dur": 3.5, "vel": 0.75 },
+      { "pitch": "G2", "start": 4.0, "dur": 1.5, "vel": 0.7 },
+      { "pitch": "A2", "start": 6.0, "dur": 1.5, "vel": 0.7 }
+    ],
+    "visual": {
+      "palette": ["#1b2a49", "#e07a5f", "#f2cc8f", "#81b29a", "#3d5a80"],
+      "texture": "watercolor",
+      "motion": "swell",
+      "instrument_colors": {
+        "kick": "#e07a5f",
+        "snare": "#f2cc8f",
+        "hat": "#81b29a",
+        "melody": "#3d5a80",
+        "bass": "#6d597a",
+        "clap": "#b56576",
+        "perc": "#eaac8b"
+      },
+      "instrument_shapes": {
+        "kick": "circle",
+        "snare": "square",
+        "hat": "triangle",
+        "melody": "line",
+        "bass": "blob",
+        "clap": "star",
+        "perc": "diamond"
+      },
+      "calm_mode_recommended": false
+    },
+    "director_note": "A warm, dusty lo-fi groove with swung hi-hats and deep warm bass supporting your contemplative melody."
+  },
+  {
+    "id": "four-floor-electro",
+    "analysis": {
+      "tempo": 124,
+      "key": "A minor",
+      "time_signature": "4/4",
+      "mood": ["energetic", "driving"],
+      "genre_hint": "synthwave house",
+      "energy_curve": [0.5, 0.7, 0.85, 0.9],
+      "provided": "drums",
+      "generated": "melody"
+    },
+    "groove": { "swing": 0.05, "humanize": 0.15 },
+    "drums": {
+      "bars": 2,
+      "kick":  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+      "snare": [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      "hat":   [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+      "clap":  [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1],
+      "perc":  [0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,0,0]
+    },
+    "melody": [
+      { "pitch": "A4", "start": 0.5, "dur": 0.25, "vel": 0.85 },
+      { "pitch": "C5", "start": 1.0, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "E5", "start": 2.0, "dur": 0.75, "vel": 0.9 },
+      { "pitch": "D5", "start": 3.0, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "C5", "start": 4.5, "dur": 0.25, "vel": 0.85 },
+      { "pitch": "B4", "start": 5.0, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "A4", "start": 6.0, "dur": 1.0, "vel": 0.9 }
+    ],
+    "bass": [
+      { "pitch": "A1", "start": 0.0, "dur": 0.5, "vel": 0.85 },
+      { "pitch": "A1", "start": 0.75, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "A1", "start": 1.5, "dur": 0.5, "vel": 0.85 },
+      { "pitch": "F1", "start": 2.0, "dur": 0.5, "vel": 0.85 },
+      { "pitch": "F1", "start": 2.75, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "G1", "start": 4.0, "dur": 0.5, "vel": 0.85 },
+      { "pitch": "G1", "start": 4.75, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "E1", "start": 6.0, "dur": 0.5, "vel": 0.85 }
+    ],
+    "visual": {
+      "palette": ["#0b091a", "#ff007f", "#00f0ff", "#ffe600", "#7928ca"],
+      "texture": "neon",
+      "motion": "pulse",
+      "instrument_colors": {
+        "kick": "#ff007f",
+        "snare": "#00f0ff",
+        "hat": "#ffe600",
+        "melody": "#7928ca",
+        "bass": "#00ff88",
+        "clap": "#ff66cc",
+        "perc": "#ffaa00"
+      },
+      "instrument_shapes": {
+        "kick": "circle",
+        "snare": "square",
+        "hat": "triangle",
+        "melody": "line",
+        "bass": "blob",
+        "clap": "star",
+        "perc": "diamond"
+      },
+      "calm_mode_recommended": false
+    },
+    "director_note": "A high-octane 4-on-the-floor synthwave progression locked to the driving drum groove with an electric neon visual atmosphere."
+  },
+  {
+    "id": "prompt-trap-loop",
+    "analysis": {
+      "tempo": 138,
+      "key": "F minor",
+      "time_signature": "4/4",
+      "mood": ["dark", "focused"],
+      "genre_hint": "modern trap",
+      "energy_curve": [0.4, 0.6, 0.8, 0.7],
+      "provided": "prompt",
+      "generated": "both"
+    },
+    "groove": { "swing": 0.1, "humanize": 0.2 },
+    "drums": {
+      "bars": 2,
+      "kick":  [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      "snare": [0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      "hat":   [1,0,1,0, 1,1,1,1, 1,0,1,0, 1,1,1,0, 1,0,1,0, 1,1,1,1, 1,0,1,0, 1,1,1,1],
+      "clap":  [0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      "perc":  [0,0,0,0, 1,0,0,0, 0,0,0,0, 0,1,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,1,0]
+    },
+    "melody": [
+      { "pitch": "C5", "start": 0.0, "dur": 0.5, "vel": 0.85 },
+      { "pitch": "G#4", "start": 0.75, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "F4", "start": 1.5, "dur": 1.0, "vel": 0.85 },
+      { "pitch": "C5", "start": 4.0, "dur": 0.5, "vel": 0.85 },
+      { "pitch": "A#4", "start": 4.75, "dur": 0.5, "vel": 0.8 },
+      { "pitch": "G#4", "start": 5.5, "dur": 0.75, "vel": 0.8 },
+      { "pitch": "G4", "start": 6.5, "dur": 0.75, "vel": 0.75 }
+    ],
+    "bass": [
+      { "pitch": "F1", "start": 0.0, "dur": 1.75, "vel": 0.9 },
+      { "pitch": "F1", "start": 2.5, "dur": 1.25, "vel": 0.85 },
+      { "pitch": "C#1", "start": 4.5, "dur": 1.5, "vel": 0.9 },
+      { "pitch": "D#1", "start": 6.0, "dur": 1.5, "vel": 0.85 }
+    ],
+    "visual": {
+      "palette": ["#111116", "#e63946", "#f1faee", "#a8dadc", "#457b9d"],
+      "texture": "ink",
+      "motion": "scatter",
+      "instrument_colors": {
+        "kick": "#e63946",
+        "snare": "#f1faee",
+        "hat": "#a8dadc",
+        "melody": "#457b9d",
+        "bass": "#e76f51",
+        "clap": "#f4a261",
+        "perc": "#2a9d8f"
+      },
+      "instrument_shapes": {
+        "kick": "circle",
+        "snare": "square",
+        "hat": "triangle",
+        "melody": "line",
+        "bass": "blob",
+        "clap": "star",
+        "perc": "diamond"
+      },
+      "calm_mode_recommended": false
+    },
+    "director_note": "A moody, rolling trap beat with skittering hi-hat rolls, syncopated 808 sub bass, and a minor bell melody."
+  },
+  {
+    "id": "calm-ambient-set",
+    "analysis": {
+      "tempo": 68,
+      "key": "E major",
+      "time_signature": "4/4",
+      "mood": ["peaceful", "dreamy"],
+      "genre_hint": "ambient meditative",
+      "energy_curve": [0.1, 0.2, 0.25, 0.15],
+      "provided": "prompt",
+      "generated": "both"
+    },
+    "groove": { "swing": 0.0, "humanize": 0.4 },
+    "drums": {
+      "bars": 2,
+      "kick":  [1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      "snare": [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+      "hat":   [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+      "clap":  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+      "perc":  [0,0,1,0, 0,0,0,0, 0,1,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,0,0, 0,1,0,0]
+    },
+    "melody": [
+      { "pitch": "E4", "start": 0.0, "dur": 2.0, "vel": 0.6 },
+      { "pitch": "G#4", "start": 2.0, "dur": 1.5, "vel": 0.55 },
+      { "pitch": "B4", "start": 4.0, "dur": 2.0, "vel": 0.65 },
+      { "pitch": "E5", "start": 6.0, "dur": 1.5, "vel": 0.5 }
+    ],
+    "bass": [
+      { "pitch": "E2", "start": 0.0, "dur": 3.75, "vel": 0.6 },
+      { "pitch": "C#2", "start": 4.0, "dur": 3.75, "vel": 0.55 }
+    ],
+    "visual": {
+      "palette": ["#0d1b2a", "#415a77", "#778da9", "#e0e1dd", "#90e0ef"],
+      "texture": "glass",
+      "motion": "drift",
+      "instrument_colors": {
+        "kick": "#778da9",
+        "snare": "#e0e1dd",
+        "hat": "#90e0ef",
+        "melody": "#48cae4",
+        "bass": "#415a77",
+        "clap": "#b8c0ff",
+        "perc": "#caf0f8"
+      },
+      "instrument_shapes": {
+        "kick": "circle",
+        "snare": "square",
+        "hat": "triangle",
+        "melody": "line",
+        "bass": "blob",
+        "clap": "star",
+        "perc": "diamond"
+      },
+      "calm_mode_recommended": true
+    },
+    "director_note": "A gentle, spacious ambient soundscape with soft texture pulses, slow drift motion, and calm mode enabled."
+  }
+]

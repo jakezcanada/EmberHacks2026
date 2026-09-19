@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Chromajam - An accessible AI jam partner you can see. Powered by Google Gemini, Tone.js, and real-time canvas visualizers for deaf, hard-of-hearing, and hearing creators." />
+    <title>Chromajam | Accessible Visual Jam Partner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app-layout">
+      <!-- Top Header -->
+      <header class="app-header" role="banner">
+        <div class="brand-group">
+          <div class="logo-mark" aria-hidden="true">
+            <span class="dot dot-1"></span>
+            <span class="dot dot-2"></span>
+            <span class="dot dot-3"></span>
+          </div>
+          <div class="brand-text">
+            <h1 class="brand-title">Chromajam</h1>
+            <p class="brand-tagline">A jam partner you can see</p>
+          </div>
+        </div>
+
+        <div class="header-badges">
+          <span id="connection-status" class="status-indicator online">
+            <span class="status-dot"></span>
+            <span id="status-label">Ready</span>
+          </span>
+          <div class="header-actions">
+            <button id="header-preset-lofi" class="badge-chip" title="Load Lo-Fi preset">Lo-Fi</button>
+            <button id="header-preset-synth" class="badge-chip" title="Load Synthwave preset">Synthwave</button>
+            <button id="header-preset-trap" class="badge-chip" title="Load Trap preset">Trap</button>
+            <button id="header-preset-ambient" class="badge-chip" title="Load Ambient preset">Ambient</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Stage: Canvas Hero -->
+      <main class="stage-container" role="main">
+        <div class="canvas-wrapper">
+          <canvas id="visual-canvas" aria-label="Visual music performance canvas" role="img"></canvas>
+
+          <!-- Friendly Loading Overlay -->
+          <div id="loading-overlay" class="loading-overlay" aria-hidden="true" style="display: none;">
+            <div class="loading-pulse-ring"></div>
+            <p id="loading-message" class="loading-message">Gemini is listening and composing...</p>
+          </div>
+
+          <!-- Notification Toast -->
+          <div id="toast-message" class="toast-message" role="alert" aria-live="polite" style="display: none;"></div>
+
+          <!-- Paint-back Gesture Hint (Stretch Phase 6) -->
+          <div class="canvas-overlay-hint" id="canvas-hint" aria-hidden="true">
+            <span>Click & drag across canvas to guide the vibe</span>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom Controls Bar -->
+      <nav id="controls-container" class="controls-container" aria-label="Audio and Generation controls"></nav>
+
+      <!-- Side Drawer: Settings & Accessibility -->
+      <aside id="settings-drawer" class="drawer drawer-left" aria-hidden="true" role="dialog" aria-modal="true"></aside>
+
+      <!-- Side Drawer: Gemini Debugger Panel -->
+      <aside id="debug-drawer" class="drawer drawer-right" aria-hidden="true" role="dialog" aria-modal="true"></aside>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
