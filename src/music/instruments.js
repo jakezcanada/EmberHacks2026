@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 import catalog from './sound-catalog.json';
+import { pitchedSampler } from './pitch-shift.js';
 
 /**
  * Instrument library. Each song picks a drum kit, lead, bass and pad from
@@ -30,12 +31,15 @@ const clamp01 = (v) => Math.max(0, Math.min(1, Number(v) || 0));
 function sampleUrls(name) {
   const spec = catalog.samples[name];
   const urls = {};
-  for (const note of spec.notes) urls[note] = `${note.replace('#', 's')}.mp3`;
-  return { urls, baseUrl: SAMPLE_ROOT + name + '/' };
+  const extension = spec.extension || 'mp3';
+  for (const note of spec.notes) urls[note] = `${note.replace('#', 's')}.${extension}`;
+  return { urls, baseUrl: SAMPLE_ROOT + name + '/', extension };
 }
 
 function sampler(name, opts = {}) {
-  return new Tone.Sampler({ ...sampleUrls(name), ...opts });
+  const spec = catalog.samples[name];
+  const { baseUrl, extension } = sampleUrls(name);
+  return pitchedSampler(spec, { baseUrl, extension, ...opts });
 }
 
 // ---------- the mix ----------
@@ -181,11 +185,20 @@ export function buildHat(kitId, mix) {
 export function buildDrumKit(kitId, mix) {
   const kit = catalog.drum_kit[kitId] || catalog.drum_kit[DEFAULT_SOUND.drum_kit];
   const base = `${SAMPLE_ROOT}drums/${kit.dir}/`;
+  const files = kit.files || {
+    kick: 'kick.mp3',
+    snare: 'snare.mp3',
+    perc: 'tom2.mp3',
+    tom: 'tom1.mp3',
+  };
   const samples = new Tone.Sampler({
-    urls: { [DRUM_NOTES.kick]: 'kick.mp3', [DRUM_NOTES.snare]: 'snare.mp3', [DRUM_NOTES.perc]: 'tom2.mp3', [DRUM_NOTES.tom]: 'tom1.mp3' },
+    urls: { [DRUM_NOTES.kick]: files.kick, [DRUM_NOTES.snare]: files.snare, [DRUM_NOTES.perc]: files.perc, [DRUM_NOTES.tom]: files.tom },
     baseUrl: base,
     release: 1,
   });
+  const customHat = files.hat
+    ? new Tone.Sampler({ urls: { [DRUM_NOTES.kick]: files.hat }, baseUrl: base, release: 0.2 })
+    : null;
   samples.volume.value = -3;
   mix.route(samples, { rev: kitId === 'acoustic' || kitId === 'room' ? 0.3 : 0.12 });
   const clap = buildClap(mix);
@@ -195,13 +208,17 @@ export function buildDrumKit(kitId, mix) {
   return {
     hit(lane, time, vel, step) {
       if (lane === 'clap') return clap.hit(time, vel);
-      if (lane === 'hat') return hat.hit(time, vel, step);
+      if (lane === 'hat') {
+        if (customHat?.loaded) customHat.triggerAttack(DRUM_NOTES.kick, time, vel);
+        else hat.hit(time, vel, step);
+        return;
+      }
       if (lane === 'kick' && boom) return boom.hit(time, vel);
       if (!samples.loaded) return;
       samples.triggerAttack(DRUM_NOTES[lane] || DRUM_NOTES.perc, time, vel);
     },
     dispose() {
-      samples.dispose(); clap.dispose(); hat.dispose(); boom?.dispose();
+      samples.dispose(); customHat?.dispose(); clap.dispose(); hat.dispose(); boom?.dispose();
     },
   };
 }

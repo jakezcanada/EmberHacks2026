@@ -11,7 +11,10 @@
     "r8": { "label": "90s R8", "dir": "R8", "use": "90s digital machine: R&B, new jack swing, dance pop, eurodance" },
     "hand": { "label": "Hand percussion", "dir": "Bongos", "use": "bongos and hand drums: latin, afrobeat, world, cumbia, acoustic" },
     "tight": { "label": "Tight pop kit", "dir": "Kit3", "use": "clean modern kit: pop, electropop, K-pop" },
-    "room": { "label": "Roomy kit", "dir": "Kit8", "use": "roomy kit: alternative, shoegaze, garage rock, dream pop" }
+    "room": { "label": "Roomy kit", "dir": "Kit8", "use": "roomy kit: alternative, shoegaze, garage rock, dream pop" },
+    "mydrums1": { "label": "Custom drums 1", "dir": "mydrums1", "extension": "wav", "files": { "kick": "kick.wav", "snare": "snare.wav", "hat": "hihat.wav", "perc": "clap.wav", "tom": "clap.wav" }, "use": "custom user drum kit 1" },
+    "mydrums2": { "label": "Custom drums 2", "dir": "mydrums2", "extension": "wav", "files": { "kick": "kick.wav", "snare": "snare.wav", "hat": "hihat.wav", "perc": "clap.wav", "tom": "clap.wav" }, "use": "custom user drum kit 2" },
+    "mydrums3": { "label": "Custom drums 3", "dir": "mydrums3", "extension": "wav", "files": { "kick": "kick.wav", "snare": "snare.wav", "hat": "hihat.wav", "perc": "clap.wav", "tom": "clap.wav" }, "use": "custom user drum kit 3" }
   },
   "lead": {
     "piano": { "label": "Grand piano", "sampled": "piano", "use": "ballads, jazz, lo-fi, classical, pop" },
@@ -59,21 +62,21 @@
     "brass": { "label": "Brass stabs", "sampled": "french-horn", "use": "cinematic, funk stabs, epic" }
   },
   "samples": {
-    "piano": { "base": "https://tonejs.github.io/audio/salamander/", "notes": ["C2", "F#2", "C3", "F#3", "C4", "F#4", "C5", "F#5", "C6"] },
-    "bass-electric": { "notes": ["E1", "A#1", "E2", "A#2", "E3", "A#3"] },
-    "contrabass": { "notes": ["F#1", "C2", "E2", "A2", "E3", "G#3"] },
-    "guitar-acoustic": { "notes": ["E2", "A2", "D3", "G3", "C4", "E4", "A4", "D5"] },
-    "guitar-electric": { "notes": ["E2", "A2", "C3", "F#3", "C4", "F#4", "C5", "A5"] },
-    "guitar-nylon": { "notes": ["E2", "A2", "D3", "F#3", "C#4", "F#4", "A4", "E5"] },
-    "flute": { "notes": ["C4", "E4", "A4", "C5", "E5", "A5", "C6"] },
-    "saxophone": { "notes": ["D3", "F#3", "A#3", "D4", "F#4", "A#4", "D5", "F#5"] },
-    "trumpet": { "notes": ["F3", "A3", "C4", "F4", "A#4", "D5", "F5"] },
-    "violin": { "notes": ["G3", "C4", "E4", "A4", "C5", "E5", "A5", "C6"] },
-    "cello": { "notes": ["C2", "G2", "C3", "G3", "C4", "G4"] },
-    "xylophone": { "notes": ["G4", "C5", "G5", "C6", "G6", "C7"] },
-    "harp": { "notes": ["D2", "F2", "C3", "G3", "D4", "A4", "C5", "G5"] },
-    "organ": { "notes": ["C2", "F#2", "C3", "F#3", "C4", "F#4", "C5"] },
-    "clarinet": { "notes": ["D3", "F3", "A#3", "D4", "F4", "A#4", "D5"] },
-    "french-horn": { "notes": ["C2", "G2", "D3", "F3", "C4", "D5"] }
+    "piano": { "base": "https://tonejs.github.io/audio/salamander/", "root": "C4", "extension": "mp3", "maxPitchShiftSemitones": 24, "notes": ["C4"] },
+    "bass-electric": { "root": "E2", "notes": ["E2"] },
+    "contrabass": { "root": "E2", "notes": ["E2"] },
+    "guitar-acoustic": { "root": "G3", "notes": ["G3"] },
+    "guitar-electric": { "root": "F#3", "notes": ["F#3"] },
+    "guitar-nylon": { "root": "C#4", "notes": ["C#4"] },
+    "flute": { "root": "C5", "notes": ["C5"] },
+    "saxophone": { "root": "D4", "notes": ["D4"] },
+    "trumpet": { "root": "C4", "notes": ["C4"] },
+    "violin": { "root": "A4", "notes": ["A4"] },
+    "cello": { "root": "C3", "notes": ["C3"] },
+    "xylophone": { "root": "C5", "notes": ["C5"] },
+    "harp": { "root": "D4", "notes": ["D4"] },
+    "organ": { "root": "C4", "notes": ["C4"] },
+    "clarinet": { "root": "D4", "notes": ["D4"] },
+    "french-horn": { "root": "C4", "notes": ["C4"] }
   }
 }

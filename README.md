@@ -69,6 +69,16 @@ Gemini decides what the song looks like. The audio engine makes it move. The app
 
 Gemini is good at understanding mood, genre, and structure, but it is not a reliable pitch transcriber. So Chromajam extracts notes from a hummed melody locally (pitch detection plus onset detection) and sends Gemini both the audio and the extracted note list. Gemini writes the complementary part against notes it can trust.
 
+### Sample pitch shifting
+
+Sample entries in `src/music/sound-catalog.json` record one source/root note and
+file extension. Sampled voices use that root file for every requested note and
+apply Tone.js `PitchShift`, so a one-shot keeps
+approximately the same duration instead of being sped up or slowed down.
+Shifts beyond 24 semitones are rejected and logged, while invalid note names
+are ignored without changing the original files. The transformation is cached
+by source note and semitone interval for the lifetime of the voice.
+
 ## Quickstart
 
 ### Prerequisites
