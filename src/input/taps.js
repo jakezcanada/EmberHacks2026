@@ -43,7 +43,7 @@ export class TapTracker {
     // Average interval
     const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
     let bpm = Math.round(60000 / avgInterval);
-    bpm = Math.max(50, Math.min(220, bpm));
+    bpm = Math.max(50, Math.min(300, bpm));
     return bpm;
   }
 

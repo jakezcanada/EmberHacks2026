@@ -1,6 +1,7 @@
 import { generateJamRequest, refineJamRequest } from './api/client.js';
 import { musicEngine } from './music/engine.js';
 import { exportMidiFile } from './music/midi.js';
+import { exportMp3File } from './music/mp3.js';
 import { AudioRecorder } from './input/record.js';
 import { processAudioToWav } from './input/wav.js';
 import { extractNotesFromAudio } from './input/pitch.js';
@@ -23,6 +24,7 @@ class ChromajamApp {
     this.currentSong = null;
     this.audioBase64 = null;
     this.audioDuration = 0;
+    this.audioBuffer = null;
     this.extractedNotes = [];
     this.tapTimes = [];
     this.isBusy = false;
@@ -59,6 +61,7 @@ class ChromajamApp {
         onToggleUserAudio: (mine) => musicEngine.setPlayUserAudio(mine),
         onExample: (i) => this.loadExample(i),
         onDownloadMidi: () => this.handleDownloadMidi(),
+        onDownloadMp3: () => this.handleDownloadMp3(),
       },
       { examples: fallbackPresets.map((p, index) => ({ index, label: EXAMPLE_LABELS[index] || p.analysis.genre_hint })) }
     );
@@ -273,11 +276,29 @@ class ChromajamApp {
     }
   }
 
+  async handleDownloadMp3() {
+    const name = (this.currentSong?.analysis?.genre_hint || 'chromajam').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const button = document.getElementById('download-mp3-btn');
+    try {
+      button.disabled = true;
+      this.showToast('Rendering one loop for MP3…', 0);
+      const source = this.currentSong ? await musicEngine.recordLoop() : this.audioBuffer;
+      await exportMp3File(source, `chromajam-${name}.mp3`);
+      this.showToast('MP3 downloaded');
+    } catch (err) {
+      console.error('MP3 export failed:', err);
+      this.showToast(`Could not render MP3: ${err.message || 'audio export failed'}`);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   // ---------- inputs ----------
 
   clearCapture() {
     this.audioBase64 = null;
     this.audioDuration = 0;
+    this.audioBuffer = null;
     this.extractedNotes = [];
     this.tapTimes = [];
     this.tapTracker.reset();
@@ -319,6 +340,7 @@ class ChromajamApp {
     const { base64, duration, pcmData, audioBuffer } = await processAudioToWav(blobOrFile);
     this.audioBase64 = base64;
     this.audioDuration = duration;
+    this.audioBuffer = audioBuffer;
     musicEngine.setUserAudio(audioBuffer);
     this.controls.setUserAudioAvailable(true);
     const extraction = extractNotesFromAudio(pcmData, 16000);

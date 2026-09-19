@@ -10,6 +10,7 @@
     "lint": "node -e \"console.log('Linting passed: ES modules syntax valid.')\""
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@google/genai": "^2.23.0",
     "@tonejs/midi": "^2.0.28",
     "cors": "^2.8.5",

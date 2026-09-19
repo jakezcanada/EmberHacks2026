@@ -2,7 +2,7 @@ import { icons } from './icons.js';
 
 /**
  * The composer bar: what you give Gemini (prompt, hum, taps, upload), the one
- * Generate action, then transport, examples and MIDI export.
+ * Generate action, then transport, examples and audio exports.
  */
 export class ControlsBar {
   constructor(container, callbacks, { examples = [] } = {}) {
@@ -52,6 +52,7 @@ export class ControlsBar {
 
   setUserAudioAvailable(hasAudio) {
     this.$('#source-toggle').hidden = !hasAudio;
+    this.$('#download-mp3-btn').disabled = false;
   }
 
   setUserAudioMode(playMine) {
@@ -107,6 +108,7 @@ export class ControlsBar {
             ${this.examples.map((ex) => `<button type="button" data-example="${ex.index}">${ex.label}</button>`).join('')}
           </div>
           <button type="button" id="download-midi-btn" class="btn btn-quiet">${icons.download}<span>Download .mid</span></button>
+          <button type="button" id="download-mp3-btn" class="btn btn-quiet">${icons.download}<span>Download .mp3</span></button>
         </div>
       </div>
     `;
@@ -145,5 +147,6 @@ export class ControlsBar {
       b.addEventListener('click', () => this.cb.onExample(Number(b.dataset.example)));
     });
     this.$('#download-midi-btn').addEventListener('click', () => this.cb.onDownloadMidi());
+    this.$('#download-mp3-btn').addEventListener('click', () => this.cb.onDownloadMp3());
   }
 }
