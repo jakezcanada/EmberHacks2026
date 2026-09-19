@@ -1,151 +1,135 @@
 import { safetyManager } from '../visuals/safety.js';
-import { hapticController } from './haptics.js';
+import { hapticController, HAPTIC_PRESETS, DEFAULT_HAPTICS } from './haptics.js';
+import { LANES } from '../visuals/lanes.js';
+import { SHAPES } from '../visuals/shapes.js';
+import { glyphSvg } from '../ui/songSheet.js';
 
-const STORAGE_KEY = 'chromajam_settings_v1';
+const STORAGE_KEY = 'chromajam_settings_v2';
 
+/**
+ * The Access tab: calm mode, haptics, and a per-instrument color, shape and
+ * vibration mapping. Choices persist in localStorage and override Gemini's.
+ */
 export class SettingsManager {
-  constructor(onUpdate) {
-    this.onUpdate = onUpdate;
-    this.customizations = this.loadSettings();
+  constructor({ onVisualChange, onCalmChange }) {
+    this.onVisualChange = onVisualChange;
+    this.onCalmChange = onCalmChange;
+    this.customizations = this.load();
+    if (typeof this.customizations.calmMode === 'boolean') {
+      safetyManager.setCalmMode(this.customizations.calmMode, true);
+    }
+    hapticController.setChoices(this.customizations.hapticPatterns);
   }
 
-  loadSettings() {
-    const defaults = {
-      calmMode: safetyManager.calmMode,
-      instrumentColors: {},
-      instrumentShapes: {},
-      hapticStrength: 'medium', // 'off', 'medium', 'high'
-    };
-
+  load() {
+    const defaults = { calmMode: null, instrumentColors: {}, instrumentShapes: {}, hapticPatterns: {} };
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return { ...defaults, ...JSON.parse(stored) };
-      }
-    } catch (e) {}
-
+      if (stored) return { ...defaults, ...JSON.parse(stored) };
+    } catch {}
     return defaults;
   }
 
-  saveSettings() {
+  save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.customizations));
-    } catch (e) {}
+    } catch {}
   }
 
-  renderDrawer(container) {
-    const instruments = ['kick', 'snare', 'hat', 'clap', 'perc', 'melody', 'bass'];
-    const shapes = ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'];
+  setCalm(enabled) {
+    safetyManager.setCalmMode(enabled, true);
+    this.customizations.calmMode = enabled;
+    this.save();
+    const toggle = this.container?.querySelector('#calm-toggle');
+    if (toggle) toggle.setAttribute('aria-checked', String(enabled));
+    this.onCalmChange?.(enabled);
+  }
+
+  render(container, visual = {}) {
+    this.container = container;
+    this.visual = visual;
+    const colors = { ...visual.instrument_colors, ...this.customizations.instrumentColors };
+    const shapes = { ...visual.instrument_shapes, ...this.customizations.instrumentShapes };
+    const haptics = { ...DEFAULT_HAPTICS, ...this.customizations.hapticPatterns };
 
     container.innerHTML = `
-      <div class="settings-drawer-content" role="region" aria-label="Accessibility and Instrument Customization Settings">
-        <div class="settings-header">
-          <h3>Accessibility & Instruments</h3>
-          <button id="close-settings-btn" class="icon-btn" aria-label="Close Settings Panel">&times;</button>
-        </div>
-
-        <div class="settings-section">
-          <h4>Visual & Motion Safety</h4>
-          <label class="toggle-control">
-            <input type="checkbox" id="calm-mode-toggle" ${safetyManager.calmMode ? 'checked' : ''} />
-            <span><strong>Calm Mode</strong> (Softens colors, slows motion, disables flashing)</span>
-          </label>
+      <div class="access">
+        <h3 class="sheet-heading">Motion safety</h3>
+        <div class="switch-row">
+          <button type="button" role="switch" id="calm-toggle" class="switch" aria-checked="${safetyManager.calmMode}" aria-describedby="calm-desc"><span aria-hidden="true"></span></button>
+          <div>
+            <p class="switch-label" id="calm-label">Calm mode</p>
+            <p class="hint" id="calm-desc">Slower, smaller marks and no whole-plane pulses. Flashes are always capped at 3 per second. Turns on by itself when your system asks for reduced motion.</p>
+          </div>
         </div>
 
         ${hapticController.isSupported ? `
-          <div class="settings-section">
-            <h4>Haptic Feedback (Vibration)</h4>
-            <label class="toggle-control">
-              <input type="checkbox" id="haptics-toggle" ${hapticController.isEnabled ? 'checked' : ''} />
-              <span>Enable Beat Vibration (Kick & Snare pulses)</span>
-            </label>
+        <div class="switch-row">
+          <button type="button" role="switch" id="haptics-toggle" class="switch" aria-checked="${hapticController.isEnabled}" aria-describedby="haptics-desc"><span aria-hidden="true"></span></button>
+          <div>
+            <p class="switch-label">Vibrate on the beat</p>
+            <p class="hint" id="haptics-desc">Each instrument can have its own pattern, set below.</p>
           </div>
-        ` : ''}
+        </div>` : ''}
 
-        <div class="settings-section">
-          <h4>Instrument Visual Identifiers</h4>
-          <p class="settings-hint">Each instrument is distinguished by both a color and a unique shape for accessibility.</p>
-          <div class="instrument-settings-list">
-            ${instruments.map(inst => `
-              <div class="instrument-setting-row" data-inst="${inst}">
-                <span class="inst-name">${inst.toUpperCase()}</span>
-                <input type="color" class="inst-color-picker" data-inst="${inst}" aria-label="${inst} color" />
-                <select class="inst-shape-select" data-inst="${inst}" aria-label="${inst} shape">
-                  ${shapes.map(s => `<option value="${s}">${s}</option>`).join('')}
-                </select>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="settings-footer">
-          <button id="reset-settings-btn" class="btn btn-secondary">Reset to Defaults</button>
-        </div>
+        <h3 class="sheet-heading">Instruments</h3>
+        <p class="hint">Every instrument keeps a color, a shape and a line of its own. Your choices here override Gemini's.</p>
+        <table class="mapping">
+          <thead><tr><th scope="col">Instrument</th><th scope="col">Color</th><th scope="col">Shape</th>${hapticController.isSupported ? '<th scope="col">Vibration</th>' : ''}</tr></thead>
+          <tbody>
+            ${LANES.map((lane) => `
+              <tr data-inst="${lane.id}">
+                <th scope="row"><span class="mapping-glyph">${glyphSvg(shapes[lane.id], colors[lane.id], { size: 20 })}</span>${lane.label}</th>
+                <td><input type="color" data-kind="color" value="${colors[lane.id] || '#888888'}" aria-label="${lane.label} color" /></td>
+                <td><select data-kind="shape" aria-label="${lane.label} shape">
+                  ${SHAPES.map((s) => `<option value="${s}" ${s === shapes[lane.id] ? 'selected' : ''}>${s}</option>`).join('')}
+                </select></td>
+                ${hapticController.isSupported ? `<td><select data-kind="haptic" aria-label="${lane.label} vibration">
+                  ${Object.entries(HAPTIC_PRESETS).map(([k, p]) => `<option value="${k}" ${k === haptics[lane.id] ? 'selected' : ''}>${p.label}</option>`).join('')}
+                </select></td>` : ''}
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <button type="button" id="reset-settings-btn" class="btn btn-quiet">Reset to Gemini's choices</button>
       </div>
     `;
 
-    // Hook listeners
-    const calmToggle = container.querySelector('#calm-mode-toggle');
-    calmToggle?.addEventListener('change', (e) => {
-      safetyManager.setCalmMode(e.target.checked, true);
-      this.customizations.calmMode = e.target.checked;
-      this.saveSettings();
-      if (this.onUpdate) this.onUpdate(this.customizations);
+    container.querySelector('#calm-toggle').addEventListener('click', () => this.setCalm(!safetyManager.calmMode));
+
+    container.querySelector('#haptics-toggle')?.addEventListener('click', (e) => {
+      const next = !hapticController.isEnabled;
+      hapticController.setEnabled(next);
+      e.currentTarget.setAttribute('aria-checked', String(next));
     });
 
-    const hapticsToggle = container.querySelector('#haptics-toggle');
-    hapticsToggle?.addEventListener('change', (e) => {
-      hapticController.setEnabled(e.target.checked);
-      this.saveSettings();
-    });
-
-    const closeBtn = container.querySelector('#close-settings-btn');
-    closeBtn?.addEventListener('click', () => {
-      container.classList.remove('open');
-      document.getElementById('settings-btn')?.focus();
-    });
-
-    const resetBtn = container.querySelector('#reset-settings-btn');
-    resetBtn?.addEventListener('click', () => {
-      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      this.customizations = this.loadSettings();
-      if (this.onUpdate) this.onUpdate(this.customizations);
-      this.updateCurrentInstrumentInputs(container, {});
-    });
-
-    // Instrument color/shape listeners
-    container.querySelectorAll('.inst-color-picker').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const inst = e.target.dataset.inst;
-        this.customizations.instrumentColors[inst] = e.target.value;
-        this.saveSettings();
-        if (this.onUpdate) this.onUpdate(this.customizations);
+    container.querySelectorAll('.mapping [data-kind]').forEach((input) => {
+      const inst = input.closest('tr').dataset.inst;
+      input.addEventListener(input.type === 'color' ? 'input' : 'change', () => {
+        const kind = input.dataset.kind;
+        if (kind === 'color') this.customizations.instrumentColors[inst] = input.value;
+        if (kind === 'shape') this.customizations.instrumentShapes[inst] = input.value;
+        if (kind === 'haptic') {
+          this.customizations.hapticPatterns[inst] = input.value;
+          hapticController.setChoice(inst, input.value);
+        }
+        this.save();
+        if (kind !== 'haptic') {
+          const row = input.closest('tr');
+          const c = row.querySelector('[data-kind="color"]').value;
+          const s = row.querySelector('[data-kind="shape"]').value;
+          row.querySelector('.mapping-glyph').innerHTML = glyphSvg(s, c, { size: 20 });
+          this.onVisualChange?.();
+        }
       });
     });
 
-    container.querySelectorAll('.inst-shape-select').forEach(select => {
-      select.addEventListener('change', (e) => {
-        const inst = e.target.dataset.inst;
-        this.customizations.instrumentShapes[inst] = e.target.value;
-        this.saveSettings();
-        if (this.onUpdate) this.onUpdate(this.customizations);
-      });
-    });
-  }
-
-  updateCurrentInstrumentInputs(container, currentVisual) {
-    if (!container || !currentVisual) return;
-    const colors = { ...currentVisual.instrument_colors, ...this.customizations.instrumentColors };
-    const shapes = { ...currentVisual.instrument_shapes, ...this.customizations.instrumentShapes };
-
-    container.querySelectorAll('.inst-color-picker').forEach(input => {
-      const inst = input.dataset.inst;
-      if (colors[inst]) input.value = colors[inst];
-    });
-
-    container.querySelectorAll('.inst-shape-select').forEach(select => {
-      const inst = select.dataset.inst;
-      if (shapes[inst]) select.value = shapes[inst];
+    container.querySelector('#reset-settings-btn').addEventListener('click', () => {
+      this.customizations = { calmMode: this.customizations.calmMode, instrumentColors: {}, instrumentShapes: {}, hapticPatterns: {} };
+      hapticController.setChoices({});
+      this.save();
+      this.onVisualChange?.();
+      this.render(container, this.visual);
+      container.querySelector('#reset-settings-btn').focus();
     });
   }
 }

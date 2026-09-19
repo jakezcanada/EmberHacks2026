@@ -1,6 +1,21 @@
 # Architectural & Design Decisions
 
-- Model Selection: Defaulted `GEMINI_MODEL` to `gemini-2.5-flash` for low latency, multimodal audio support, and JSON schema compliance.
+- Model Selection: Default `GEMINI_MODEL` is `gemini-flash-latest` (the build prompt default). `gemini-2.5-flash` is no longer available to new API keys.
 - Client Architecture: Vanilla ES modules with Vite, no external frontend framework as specified.
 - Synth Sounds: Tone.js MembraneSynth (kick), NoiseSynth + MetalSynth (snare, hat, clap, perc), PolySynth with triangle/saw oscillator (melody), MonoSynth with lowpass filter (bass).
 - Pitch Detection: Using Pitchy with Web Audio AnalyserNode autocorrelation fallback for robust client-side pitch tracking without external binary dependencies.
+- UI redesign ("Point and Line to Plane"): Bauhaus visual music. The chrome is ink on a light sheet with square corners, and red is reserved for Generate. Direction contract: `.impeccable/surfaces/index-html.md`.
+- Visual layout: one canvas holds two layers. The painting (Gemini's texture) sits above a 7-lane score, and both share one time axis and one playhead. Lane order is fixed everywhere: melody, hat, perc, clap, snare, kick, bass.
+- Instrument identity: every texture draws the instrument's own shape (`src/visuals/shapes.js`), so shape and color are both carried in all five textures, not only in neon.
+- State without color: waiting hits are hollow outlines, played or sounding hits are filled, and resting lanes are dashed.
+- Debug panel moved from a drawer into a "Gemini I/O" tab in the side sheet (press D). Settings became an "Access" tab (no modal) and now include per-instrument haptic patterns, as BUILD_PROMPT 7.5 asks.
+- Energy bands: the analyser returns decibels, so they are normalised from -90..-20 dB. The old `abs()` math always produced 1.0.
+- Flash limiter: now actually used. The only large-area luminance change (the kick "breath" under pulse motion) goes through `safetyManager.allowFlash`.
+- Fonts (Jost, Martian Mono) are self-hosted in `public/fonts` so offline demos keep the typography.
+- Gemini reliability: the server walks a model chain (`GEMINI_MODEL`, then `GEMINI_FALLBACK_MODELS`). A 503 overload, 429 quota, 400 unsupported option or 12 s timeout moves on to the next model, which has its own free-tier quota. The total budget is about 24 s before falling back to a preset. `gemini-flash-latest` resolved to an overloaded model with a 20 requests/day free tier, so the default primary is now `gemini-3.6-flash`.
+- Thinking is set to `MINIMAL` for faster JSON; a model that rejects that level is retried with its default.
+- Fallback presets are chosen at random among those that fit the input, skipping the song already playing, so a fallback never repeats the same beat.
+- Sound: every song now carries `sound` (drum_kit, lead, bass, pad, reverb, delay) chosen by Gemini from `src/music/sound-catalog.json`. It has 12 drum kits, 20 leads, 9 basses and 10 pads. Sampled instruments load lazily from `public/samples` (CC-BY 3.0, credited in README); electronic voices are synthesized. Mix: bus compressor, limiter, shared reverb and dotted-8th delay sends.
+- Chords: a new `chords` part is played by the pad (block, strummed or arpeggiated depending on the pad). It gets its own Chords lane (hexagon by default) in the painting, score, legend and MIDI export.
+- Melody variety: the prompt now asks for motif-and-answer phrasing, syncopation, mixed note lengths and range. Each request adds a random creative direction, temperature 1.0 and a random seed. `groove.variation` lets every repeat of the loop improvise: occasional rests, octave jumps, in-key passing notes and ghost hats or snares.
+- Validation fix: flats such as "Bb4" were uppercased to "BB4" and silently dropped. Pitches are now normalized.

@@ -110,7 +110,8 @@ Environment variables (see `.env.example`):
 | Variable | Required | Default | Notes |
 |---|---|---|---|
 | `GEMINI_API_KEY` | Yes (unless using fallback) | none | Kept on the server. Never exposed to the browser. |
-| `GEMINI_MODEL` | No | `gemini-flash-latest` | Any Gemini model that supports audio input and JSON output. Check AI Studio for current model names. |
+| `GEMINI_MODEL` | No | `gemini-3.6-flash` | Any Gemini model that supports audio input and JSON output. Check AI Studio for current model names. |
+| `GEMINI_FALLBACK_MODELS` | No | `gemini-flash-lite-latest,gemini-3.5-flash,gemini-3.7-flash` | Tried in order when the primary model is overloaded (503), out of quota (429) or too slow. Each model has its own free-tier daily quota. |
 | `PORT` | No | `3001` | Express proxy port |
 | `MAX_AUDIO_SECONDS` | No | `15` | Longest recording sent to Gemini |
 | `USE_FALLBACK_ONLY` | No | `false` | Forces cached presets, useful for rehearsing a demo |
@@ -269,6 +270,16 @@ Issues and pull requests are welcome. Please:
 ## License
 
 MIT. See `LICENSE`.
+
+## Sound credits
+
+Chromajam ships a curated subset of free samples in `public/samples/` so it works offline:
+
+- **Instruments** (guitars, bass, strings, winds, brass, mallets, harp, organ): [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments) by Nicholas Brosowsky, samples licensed [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/).
+- **Grand piano**: Salamander Grand Piano by Alexander Holm, via the [Tone.js audio repo](https://github.com/Tonejs/audio), licensed CC-BY 3.0.
+- **Drum kits**: the [Tone.js audio repo](https://github.com/Tonejs/audio) drum samples, originally from Chris Wilson's [web-audio-samples](https://github.com/cwilso/web-audio-samples).
+
+Synth voices (supersaw, pluck, FM bell, 808, reese, acid and others), the handclap and the 808 kick are synthesized in `src/music/instruments.js`.
 
 ## Credits
 

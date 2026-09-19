@@ -1,80 +1,70 @@
-import { hexToRgba } from '../palettes.js';
+import { BaseStyle } from './base.js';
+import { pointInPolygon } from '../shapes.js';
 
-export class GrainStyle {
+/** Film-like stipple: each mark is a cloud of grains filling the instrument's shape. */
+export class GrainStyle extends BaseStyle {
   constructor() {
-    this.grains = [];
+    super({ maxMarks: 60, life: 1.8, ground: '#e2e3df' });
+    this.noise = null;
+    this.noiseClock = 0;
   }
 
-  spawn(event, { width, height, instrumentColors, instrumentShapes, motion, isCalm }) {
-    const color = instrumentColors[event.instrument] || '#d4a373';
-    const vel = event.velocity || 0.8;
-
-    let yBase = height * 0.5;
-    if (event.instrument === 'bass') yBase = height * 0.8;
-    else if (event.instrument === 'melody') yBase = height * 0.25;
-    else if (event.instrument === 'kick') yBase = height * 0.65;
-    else if (event.instrument === 'snare') yBase = height * 0.45;
-    else if (event.instrument === 'hat') yBase = height * 0.35;
-
-    const count = isCalm ? 12 : Math.floor(25 + vel * 30);
-    const originX = width * (0.15 + 0.7 * Math.random());
-    const originY = yBase + (Math.random() - 0.5) * (height * 0.1);
-
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = (20 + Math.random() * 80) * vel;
-
-      this.grains.push({
-        x: originX,
-        y: originY,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color,
-        size: 1 + Math.random() * 2.5,
-        life: 1.0,
-        decay: (isCalm ? 0.4 : 0.6) + Math.random() * 0.4,
-        motion,
-      });
+  prepare(mark, env) {
+    const count = env.isCalm ? 36 : 80;
+    const grains = [];
+    let guard = 0;
+    while (grains.length < count && guard++ < count * 8) {
+      const x = (Math.random() * 2 - 1) * (mark.shape === 'line' ? env.stretch : 1.15);
+      const y = (Math.random() * 2 - 1) * 1.15;
+      if (pointInPolygon(x, y, mark.pts)) grains.push({ x, y, s: 1 + Math.random() * 1.6 });
     }
-
-    if (this.grains.length > (isCalm ? 80 : 250)) {
-      this.grains.splice(0, this.grains.length - (isCalm ? 80 : 250));
-    }
+    mark.grains = grains;
   }
 
-  draw(ctx, state, dt) {
-    const { width, height, isCalm } = state;
+  paintMark(ctx, m, scale, alpha) {
+    const r = m.r * scale;
+    // Grains loosen outward as the mark ages
+    const loosen = 1 + (m.age / m.life) * 0.25;
+    ctx.fillStyle = m.color;
+    ctx.globalAlpha = alpha;
+    const cos = Math.cos(m.rotation);
+    const sin = Math.sin(m.rotation);
+    for (const g of m.grains) {
+      const px = g.x * r * loosen;
+      const py = g.y * r * loosen;
+      ctx.fillRect(m.x + px * cos - py * sin, m.y + px * sin + py * cos, g.s, g.s);
+    }
+    ctx.globalAlpha = 1;
+  }
 
-    // Warm vintage film backdrop wash
-    ctx.fillStyle = 'rgba(28, 25, 23, 0.25)';
-    ctx.fillRect(0, 0, width, height);
-
+  paintOverlay(ctx, state, dt) {
+    if (!this.noise) this.noise = makeNoiseTile();
+    // Re-seed the grain field 12 times a second: film texture, never a flash
+    this.noiseClock += dt;
+    if (this.noiseClock > 1 / 12) {
+      this.noiseClock = 0;
+      this.offset = [Math.random() * 128, Math.random() * 128];
+    }
+    const [ox, oy] = this.offset || [0, 0];
     ctx.save();
-    for (let i = this.grains.length - 1; i >= 0; i--) {
-      const g = this.grains[i];
-      g.life -= g.decay * dt;
-
-      if (g.life <= 0) {
-        this.grains.splice(i, 1);
-        continue;
-      }
-
-      g.x += g.vx * dt;
-      g.y += g.vy * dt;
-
-      const alpha = Math.min(1.0, g.life * 1.5);
-      ctx.fillStyle = hexToRgba(g.color, alpha);
-      ctx.fillRect(g.x, g.y, g.size, g.size);
-    }
-
-    // Add subtle ambient film noise if not calm
-    if (!isCalm) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-      for (let j = 0; j < 30; j++) {
-        ctx.fillRect(Math.random() * width, Math.random() * height, 1.5, 1.5);
-      }
-    }
-
+    ctx.globalAlpha = state.isCalm ? 0.05 : 0.09;
+    ctx.fillStyle = ctx.createPattern(this.noise, 'repeat');
+    ctx.translate(-ox, -oy);
+    ctx.fillRect(ox, oy, state.width, state.height);
     ctx.restore();
   }
+}
+
+function makeNoiseTile() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const img = g.createImageData(128, 128);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = Math.random() < 0.5 ? 20 : 235;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    img.data[i + 3] = Math.random() * 255;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
 }

@@ -1,0 +1,636 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-19T00:00:00Z",
+  "title": "Design System: Chromajam",
+  "extensions": {
+    "colorMeta": {
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "#f6f7f5",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#252524",
+          "#414241",
+          "#616160",
+          "#828381",
+          "#a4a5a3",
+          "#c8c9c7",
+          "#eeefed"
+        ]
+      },
+      "plane": {
+        "role": "neutral",
+        "displayName": "Plane",
+        "canonical": "#eceeeb",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#242623",
+          "#414240",
+          "#60625f",
+          "#818380",
+          "#a4a6a3",
+          "#c8cac7",
+          "#edefec"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Drafting Ink",
+        "canonical": "#141414",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#44484b",
+        "tonalRamp": [
+          "#080c0e",
+          "#222628",
+          "#3f4346",
+          "#5e6265",
+          "#7f8386",
+          "#a1a6a9",
+          "#c5cacd",
+          "#eaeff3"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Pencil",
+        "canonical": "#5f6468",
+        "tonalRamp": [
+          "#080c0f",
+          "#212629",
+          "#3e4346",
+          "#5d6266",
+          "#7e8387",
+          "#a0a6aa",
+          "#c4cace",
+          "#e9eff4"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule (14% ink)",
+        "canonical": "rgba(20, 20, 20, 0.14)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "wash": {
+        "role": "neutral",
+        "displayName": "Wash (6% ink)",
+        "canonical": "rgba(20, 20, 20, 0.06)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "red": {
+        "role": "primary",
+        "displayName": "Bauhaus Red",
+        "canonical": "#d7261e",
+        "tonalRamp": [
+          "#280000",
+          "#5a0000",
+          "#8c0000",
+          "#ba0000",
+          "#de4437",
+          "#f8796a",
+          "#ffafa3",
+          "#ffe6e1"
+        ]
+      },
+      "red-deep": {
+        "role": "primary",
+        "displayName": "Fired Red",
+        "canonical": "#b51d16",
+        "tonalRamp": [
+          "#280000",
+          "#5a0000",
+          "#8b0000",
+          "#b31a14",
+          "#dc483a",
+          "#f87969",
+          "#ffafa2",
+          "#ffe6e1"
+        ]
+      },
+      "yellow": {
+        "role": "secondary",
+        "displayName": "Signal Yellow",
+        "canonical": "#f5c400",
+        "tonalRamp": [
+          "#1a0500",
+          "#401900",
+          "#643700",
+          "#865800",
+          "#a97a00",
+          "#cb9f00",
+          "#e3c778",
+          "#f8eed4"
+        ]
+      },
+      "ground-ink": {
+        "role": "neutral",
+        "displayName": "Ink Texture Ground",
+        "canonical": "#f3f4f1",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#252523",
+          "#414240",
+          "#61625f",
+          "#828380",
+          "#a4a5a3",
+          "#c8c9c7",
+          "#eeefec"
+        ]
+      },
+      "ground-grain": {
+        "role": "neutral",
+        "displayName": "Grain Texture Ground",
+        "canonical": "#e2e3df",
+        "tonalRamp": [
+          "#0b0b09",
+          "#252522",
+          "#42423f",
+          "#61625e",
+          "#82837f",
+          "#a4a5a2",
+          "#c9cac6",
+          "#eeefeb"
+        ]
+      },
+      "ground-glass": {
+        "role": "neutral",
+        "displayName": "Glass Texture Ground",
+        "canonical": "#e5e8ea",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232527",
+          "#404244",
+          "#5f6263",
+          "#808384",
+          "#a3a5a7",
+          "#c7c9cb",
+          "#eceff1"
+        ]
+      },
+      "ground-neon": {
+        "role": "neutral",
+        "displayName": "Neon Texture Ground",
+        "canonical": "#0f1014",
+        "tonalRamp": [
+          "#0a0b0f",
+          "#242529",
+          "#404247",
+          "#606166",
+          "#818287",
+          "#a3a5aa",
+          "#c7c9cf",
+          "#eceef4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Song title in the Song tab; 30px at 1240px and below."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "CHROMAJAM in the masthead only, uppercase."
+      },
+      "body-large": {
+        "displayName": "Body Large",
+        "purpose": "Director note (max 38ch), prompt input, measurement values."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading text, legend names, switch labels."
+      },
+      "hint": {
+        "displayName": "Hint",
+        "purpose": "Origin lines, helper copy, mood line, in Graphite."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Outlined buttons, tabs, tool buttons."
+      },
+      "button-generate": {
+        "displayName": "Generate",
+        "purpose": "The Generate label only."
+      },
+      "label": {
+        "displayName": "Section Label",
+        "purpose": "Uppercase sheet section headings, always under a 2px ink rule."
+      },
+      "measure": {
+        "displayName": "Measure",
+        "purpose": "Martian Mono for measurement names, counts, table heads, canvas annotations and bar counter."
+      },
+      "readout": {
+        "displayName": "Readout",
+        "purpose": "Live BPM value."
+      }
+    },
+    "shadows": [
+      {
+        "name": "floating-toast",
+        "value": "0 6px 20px rgba(20, 20, 20, 0.25)",
+        "purpose": "Only at 900px and below, where the toast floats fixed over scrolling content. The sole shadow; chrome is otherwise flat."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Standard easing for chrome transitions."
+      },
+      {
+        "name": "control-color",
+        "value": "120ms",
+        "purpose": "Background/color change on buttons and tool buttons."
+      },
+      {
+        "name": "switch-slide",
+        "value": "160ms",
+        "purpose": "Switch thumb travel (22px)."
+      },
+      {
+        "name": "toast-in",
+        "value": "220ms, translateY(-4px) to 0 with fade",
+        "purpose": "Masthead status message entrance."
+      },
+      {
+        "name": "legend-sounding",
+        "value": "scale(1.3), 90ms in, held 140ms",
+        "purpose": "Legend glyph while its instrument sounds."
+      },
+      {
+        "name": "mark-bloom",
+        "value": "scale 0.55 to 1 over 0.14s (cubic ease-out), then fade (1 - t)^1.3",
+        "purpose": "Every plane mark, all textures."
+      },
+      {
+        "name": "ghost-reveal",
+        "value": "1100ms left-to-right wipe with a leading hairline",
+        "purpose": "The hollow whole-loop composition appearing on a new song."
+      },
+      {
+        "name": "develop-exposure",
+        "value": "every 0.28s, 2.4s sine life, peak ~20% alpha",
+        "purpose": "Faint circle/square/triangle outlines while Gemini composes."
+      },
+      {
+        "name": "ground-fade",
+        "value": "exponential, rate 3/s",
+        "purpose": "Plane ground color change between textures; never a cut."
+      },
+      {
+        "name": "flash-limit",
+        "value": "3 per second; overflow held to 25%; calm 20%",
+        "purpose": "WCAG 2.3.1 gate on any whole-plane luminance change."
+      },
+      {
+        "name": "calm-mode",
+        "value": "speed x0.4, life x1.5, mark cap /2, size x0.85, no rotation, no plane pulse",
+        "purpose": "Visible calming of the painting; follows prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1240px",
+        "purpose": "Sheet 340px, tagline and source detail hide, title 30px."
+      },
+      {
+        "name": "mid",
+        "value": "1080px",
+        "purpose": "Input tools collapse to icon squares; examples label hides."
+      },
+      {
+        "name": "stack",
+        "value": "900px",
+        "purpose": "Single scrolling column; plane 68svh (440-640px); toast floats at bottom."
+      },
+      {
+        "name": "narrow",
+        "value": "520px",
+        "purpose": "Compose row stacks, Generate full width, brand mark hides."
+      },
+      {
+        "name": "canvas-compact",
+        "value": "640px canvas width",
+        "purpose": "Compact score: 17px lanes, 72px label column."
+      }
+    ],
+    "canvas": {
+      "lanes": [
+        {
+          "id": "melody",
+          "label": "Melody",
+          "top": 0.11,
+          "bottom": 0.34,
+          "pitched": true,
+          "defaultShape": "line"
+        },
+        {
+          "id": "hat",
+          "label": "Hi-hat",
+          "top": 0.36,
+          "bottom": 0.44,
+          "defaultShape": "triangle"
+        },
+        {
+          "id": "perc",
+          "label": "Perc",
+          "top": 0.44,
+          "bottom": 0.51,
+          "defaultShape": "diamond"
+        },
+        {
+          "id": "clap",
+          "label": "Clap",
+          "top": 0.51,
+          "bottom": 0.58,
+          "defaultShape": "star"
+        },
+        {
+          "id": "snare",
+          "label": "Snare",
+          "top": 0.58,
+          "bottom": 0.67,
+          "defaultShape": "square"
+        },
+        {
+          "id": "kick",
+          "label": "Kick",
+          "top": 0.67,
+          "bottom": 0.79,
+          "defaultShape": "circle"
+        },
+        {
+          "id": "bass",
+          "label": "Bass",
+          "top": 0.8,
+          "bottom": 0.95,
+          "pitched": true,
+          "defaultShape": "blob"
+        }
+      ],
+      "shapes": [
+        "circle",
+        "square",
+        "triangle",
+        "line",
+        "blob",
+        "star",
+        "diamond"
+      ],
+      "stateByFill": {
+        "waiting": "hollow: 2px instrument-color stroke over a 0.75px ink hairline, no fill",
+        "played": "instrument-color fill + 1px ink contour",
+        "sounding": "fill + 1.75px ink contour at 1.3x",
+        "resting": "dashed 3/4 center line in the score; unfilled dashed legend glyph at 50%; count reads \"rests\""
+      },
+      "textures": {
+        "watercolor": {
+          "ground": "#eceeeb",
+          "treatment": "three multiplied translucent washes that bleed outward"
+        },
+        "ink": {
+          "ground": "#f3f4f1",
+          "treatment": "brush contour, ink hairline, splatter"
+        },
+        "grain": {
+          "ground": "#e2e3df",
+          "treatment": "stipple inside the shape under 12Hz film noise at <=9%"
+        },
+        "glass": {
+          "ground": "#e5e8ea",
+          "treatment": "translucent gradient panes with a bevel edge"
+        },
+        "neon": {
+          "ground": "#0f1014",
+          "treatment": "glowing contours; the only dark ground; annotations switch to white"
+        }
+      },
+      "score": {
+        "height": "28% of canvas, clamped 176-236px",
+        "labelColumn": "124px (compact 72px)",
+        "stepsPerBar": 16,
+        "barLine": "rgba(20,20,20,0.75)",
+        "beatLine": "rgba(20,20,20,0.2)",
+        "laneRule": "rgba(20,20,20,0.1)",
+        "playhead": "1.5px solid ink"
+      },
+      "runtime": "Instrument colors and palette come from Gemini per song (or a preset or user override) and are never tokens."
+    }
+  },
+  "components": [
+    {
+      "name": "Generate Button",
+      "kind": "button",
+      "refersTo": "button-generate",
+      "description": "The single red control; transforms the song. Nothing else is red.",
+      "html": "<button class=\"ds-btn-generate\">Generate</button>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-btn-generate{height:52px;padding:0 30px;border:0;border-radius:0;background:var(--red);color:#fff;font-family:var(--sans);font-size:19px;font-weight:600;letter-spacing:0.01em;cursor:pointer;transition:background-color 120ms var(--ease-out);} .ds-btn-generate:hover{background:var(--red-deep);} .ds-btn-generate:active{transform:translateY(1px);} .ds-btn-generate:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default action: 1.5px ink outline, square, wash on hover, ink fill when pressed.",
+      "html": "<button class=\"ds-btn\"><svg viewBox=\"0 0 20 20\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"square\" stroke-linejoin=\"miter\" aria-hidden=\"true\"><path d=\"M11 2.5 4.5 11H10l-1 6.5L15.5 9H10z\"/></svg><span>More energy</span></button> <button class=\"ds-btn\" aria-pressed=\"true\">Calm mode</button>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border:1.5px solid var(--ink);border-radius:0;background:transparent;color:var(--ink);font-family:var(--sans);font-size:16px;font-weight:500;cursor:pointer;transition:background-color 120ms var(--ease-out),color 120ms var(--ease-out);} .ds-btn:hover{background:var(--wash);} .ds-btn:active{transform:translateY(1px);} .ds-btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;} .ds-btn[aria-pressed=\"true\"]{background:var(--ink);color:var(--sheet);}"
+    },
+    {
+      "name": "Play Button",
+      "kind": "button",
+      "refersTo": "button-play",
+      "description": "Transport: ink fill, triangle icon quoting the instrument vocabulary.",
+      "html": "<button class=\"ds-btn-play\"><svg viewBox=\"0 0 20 20\" width=\"18\" height=\"18\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M5 3.5 17 10 5 16.5z\"/></svg><span>Play</span></button>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-btn-play{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:112px;height:44px;padding:0 16px;border:0;border-radius:0;background:var(--ink);color:var(--sheet);font-family:var(--sans);font-size:16px;font-weight:600;cursor:pointer;} .ds-btn-play:hover{background:#000;} .ds-btn-play:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Prompt Field",
+      "kind": "input",
+      "refersTo": "prompt-field",
+      "description": "Paper field with a 2px structural border and the red caret that feeds Generate.",
+      "html": "<label class=\"ds-prompt\"><input class=\"ds-prompt-input\" placeholder=\"Describe a vibe: rainy lo-fi with soft keys\"></label>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-prompt{display:flex;align-items:center;height:52px;border:2px solid var(--ink);background:var(--paper);} .ds-prompt:focus-within{outline:2px solid var(--ink);outline-offset:2px;} .ds-prompt-input{flex:1;height:100%;padding:0 16px;border:0;background:transparent;font-family:var(--sans);font-size:18px;color:var(--ink);caret-color:var(--red);outline:none;} .ds-prompt-input::placeholder{color:var(--ink-3);opacity:1;}"
+    },
+    {
+      "name": "Sheet Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Three equal square cells on a 2px ink baseline; selected fills with ink, focus ring turns yellow.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\">Song</button><button role=\"tab\" aria-selected=\"false\">Gemini I/O <kbd>D</kbd></button><button role=\"tab\" aria-selected=\"false\">Access</button></div>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:2px solid var(--ink);background:var(--sheet);} .ds-tabs button{height:44px;border:0;border-right:1px solid var(--ink);background:none;color:var(--ink);font-family:var(--sans);font-size:15px;font-weight:500;cursor:pointer;} .ds-tabs button:last-child{border-right:0;} .ds-tabs button:hover{background:var(--wash);} .ds-tabs button[aria-selected=\"true\"]{background:var(--ink);color:var(--sheet);} .ds-tabs button:focus-visible{outline:2px solid var(--yellow);outline-offset:-4px;} .ds-tabs kbd{font-family:var(--mono);font-size:11px;border:1px solid currentColor;padding:0 4px;margin-left:6px;opacity:0.75;}"
+    },
+    {
+      "name": "Source State",
+      "kind": "chip",
+      "refersTo": "source-state",
+      "description": "Masthead provenance chip; state by fill pattern: filled live, outline preset, half composing.",
+      "html": "<p class=\"ds-source\"><span class=\"ds-mark ds-live\"></span><strong>Gemini</strong><span>live · 7.0 s</span></p><p class=\"ds-source\"><span class=\"ds-mark\"></span><strong>Example preset</strong><span>Gemini not called</span></p><p class=\"ds-source\"><span class=\"ds-mark ds-busy\"></span><strong>Composing</strong><span>2.5 s</span></p>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-source{display:inline-flex;align-items:center;gap:10px;height:34px;padding:0 14px 0 12px;margin:0 8px 8px 0;border:1.5px solid var(--ink);background:var(--paper);font-family:var(--sans);color:var(--ink);white-space:nowrap;} .ds-source strong{font-size:17px;font-weight:600;} .ds-source span:last-child{font-size:14px;color:var(--ink-2);} .ds-mark{width:14px;height:14px;border:1.5px solid var(--ink);background:transparent;} .ds-live{background:var(--ink);} .ds-busy{background:linear-gradient(90deg,var(--ink) 50%,transparent 50%);}"
+    },
+    {
+      "name": "Switch",
+      "kind": "custom",
+      "refersTo": "switch",
+      "description": "Square track and thumb; on fills the track with ink.",
+      "html": "<button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Calm mode\"><span></span></button> <button class=\"ds-switch\" role=\"switch\" aria-checked=\"false\" aria-label=\"Vibrate on the beat\"><span></span></button>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-switch{position:relative;width:48px;height:26px;border:1.5px solid var(--ink);border-radius:0;background:var(--paper);cursor:pointer;padding:0;} .ds-switch span{position:absolute;top:3px;left:3px;width:17px;height:17px;background:var(--ink);transition:transform 160ms var(--ease-out);} .ds-switch[aria-checked=\"true\"]{background:var(--ink);} .ds-switch[aria-checked=\"true\"] span{background:var(--sheet);transform:translateX(22px);} .ds-switch:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Instrument Legend Row",
+      "kind": "custom",
+      "refersTo": "score",
+      "description": "Shape + name + shape name + mono count, in fixed lane order; resting lanes go dashed. Instrument colors shown are sample runtime data, not tokens.",
+      "html": "<ul class=\"ds-legend\"><li><svg viewBox=\"0 0 22 22\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path d=\"M11.00 1.50L19.62 17.34L2.38 17.34Z\" fill=\"#81b29a\" stroke=\"#141414\" stroke-width=\"1.25\"/></svg><span class=\"n\">Hi-hat</span><span class=\"s\">triangle</span><span class=\"c\">18 hits</span></li><li class=\"rest\"><svg viewBox=\"0 0 22 22\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path d=\"M3.43 3.43L18.57 3.43L18.57 18.57L3.43 18.57Z\" fill=\"none\" stroke=\"#141414\" stroke-width=\"1.25\" stroke-dasharray=\"2.5 2.5\" opacity=\"0.5\"/></svg><span class=\"n\">Snare</span><span class=\"s\">square</span><span class=\"c\">rests</span></li></ul>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-legend{list-style:none;margin:0;padding:0;font-family:var(--sans);color:var(--ink);} .ds-legend li{display:grid;grid-template-columns:26px minmax(0,1fr) auto 76px;align-items:center;gap:10px;padding:4px 0;border-bottom:1px solid var(--rule);} .ds-legend .n{font-size:16px;font-weight:500;} .ds-legend .s{font-size:14px;color:var(--ink-2);} .ds-legend .c{font-family:var(--mono);font-size:12px;color:var(--ink-2);text-align:right;} .ds-legend .rest .n,.ds-legend .rest .c{color:var(--ink-3);} .ds-legend svg{transition:transform 90ms ease-out;} .ds-legend li:hover svg{transform:scale(1.3);}"
+    },
+    {
+      "name": "Measurements Grid",
+      "kind": "card",
+      "refersTo": "score",
+      "description": "Two-column definition list: mono uppercase names, Jost values, hairline rules.",
+      "html": "<dl class=\"ds-measures\"><div><dt>Tempo</dt><dd>120 BPM</dd></div><div><dt>Key</dt><dd>D minor</dd></div><div><dt>Loop</dt><dd>2 bars of 4/4</dd></div><div><dt>Swing</dt><dd>15%</dd></div></dl>",
+      "css": ":host{--sheet:#f6f7f5;--plane:#eceeeb;--paper:#ffffff;--ink:#141414;--ink-2:#44484b;--ink-3:#5f6468;--rule:rgba(20,20,20,0.14);--wash:rgba(20,20,20,0.06);--red:#d7261e;--red-deep:#b51d16;--yellow:#f5c400;--sans:Jost,Futura,'Century Gothic',system-ui,sans-serif;--mono:'Martian Mono',ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);} .ds-measures{display:grid;grid-template-columns:1fr 1fr;margin:0;border-top:1px solid var(--ink);font-family:var(--sans);color:var(--ink);} .ds-measures>div{padding:9px 0 10px;border-bottom:1px solid var(--rule);} .ds-measures>div:nth-child(odd){padding-right:12px;border-right:1px solid var(--rule);} .ds-measures>div:nth-child(even){padding-left:14px;} .ds-measures dt{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-2);} .ds-measures dd{margin:0;font-size:18px;font-weight:500;line-height:1.25;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Point and Line to Plane",
+    "overview": "The song is a Bauhaus composition. Every instrument is a primary shape with a color and a fixed line, and time runs left to right, as in Kandinsky's transcription of Beethoven in *Point and Line to Plane*. The interface is a drafting sheet: near-white paper, black ink drawn in three stroke weights, square corners everywhere, flat fills. The chrome stays monochrome so the only color that paints is Gemini's per-song palette, which lands on the plane and in the score. Bauhaus red appears once, on Generate.\n\nThe canvas has two layers on one time axis. The **plane** (top) is the expressive painting: Gemini's texture blooms each hit where and when it sounds. The **score** (bottom) is the precise record: seven labeled lanes, the whole loop visible, each hit drawn as its instrument's shape. The same scheduled event fills the score glyph and blooms the plane mark, so the two never disagree. Density is instrument-panel: everything is visible at once, and hierarchy comes from size and ink weight rather than color or depth.\n\nThe world rejects the dark neon music-AI dashboard and its cream editorial opposite. Neon survives only as one of Gemini's five painting textures, confined to the plane.",
+    "keyCharacteristics": [
+      "Ink on a near-white sheet; a cool gray plane holds the painting.",
+      "Three stroke weights: 1px hairline, 1.5px control, 2px structure.",
+      "Square corners on every piece of chrome.",
+      "State is shown by fill pattern, never by hue: filled is active or sounding, hollow is waiting, dashed is resting.",
+      "One type family (Jost) with hierarchy by size; Martian Mono only for measurements.",
+      "Seven instrument shapes, seven fixed lanes, one shared time axis.",
+      "Motion is bloom-and-fade, capped at three flashes per second and slowed in calm mode."
+    ],
+    "rules": [
+      {
+        "name": "The Only Gemini Paints Rule",
+        "body": "Chrome carries no hue. Instrument colors and the palette arrive per song from Gemini (or a preset, or the user's override in Access) and appear only on the plane, the score, and the instrument glyphs. They are runtime data and never become tokens.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Red Rule",
+        "body": "Red marks the one control that transforms the song. If a second element turns red, Generate stops being findable from across the room.",
+        "section": "colors"
+      },
+      {
+        "name": "The Hue Never Carries State Rule",
+        "body": "Every state must stay readable in grayscale. Filled, hollow, half-filled, and dashed carry state; color only identifies an instrument.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Jost sets everything that is read. Hierarchy comes from size and weight, never from a second display face.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Measures Rule",
+        "body": "Martian Mono is only for quantities and machine data: tempo, key, bars, counts, milliseconds, JSON. Never use it for prose or for decoration. The body sets `tabular-nums` so Jost numerals also align.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Time Axis Rule",
+        "body": "The plane and the score share one horizontal scale. Beat 0 sits at the same x in both, drum hits sit mid-cell exactly over their score glyph, and a single playhead hairline sweeps both.",
+        "section": "layout"
+      },
+      {
+        "name": "The Fixed Lane Order Rule",
+        "body": "Instruments keep one vertical order everywhere (plane, score, legend, Access table), top to bottom: Melody, Hi-hat, Perc, Clap, Snare, Kick, Bass. Melody sits on top and bass at the bottom, with drums between, ordered from high to low register. Melody and bass place notes by pitch within their lane. Drums sit on the lane's center line.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "No chrome element casts a shadow, glows, or uses a gradient. Glow and gradient belong to the painting textures (neon, glass), which live only on the plane.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Chrome Rule",
+        "body": "Chrome has no border-radius. Curves appear only inside the instrument vocabulary (circle, blob, line caps) and the icons that quote it.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Seven Shapes Rule",
+        "body": "An instrument is identified by shape and lane first and color second. Never add an eighth shape or render an instrument without its shape.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Three Flashes Rule",
+        "body": "Any large-area luminance change goes through the flash limiter: at most three full-strength flashes per second, with extra flashes held to 25%. The only whole-plane flash is the pulse-motion kick tint, capped at 10% alpha. Film grain reseeds 12 times per second at no more than 9% alpha, which makes it texture, not a flash.",
+        "section": "components"
+      },
+      {
+        "name": "The Calm Rule",
+        "body": "Calm mode visibly slows and quiets the painting: motion speed ×0.4, mark life ×1.5, mark cap halved, marks 15% smaller and unrotated, no whole-plane pulse, softer glow and splatter. Flash gating drops to 20%. Calm mode follows `prefers-reduced-motion` and each song's recommendation until the user chooses. CSS transitions and animations stop under reduced motion.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do keep chrome in ink, sheet, plane, and paper, and let Gemini's palette be the only color that paints.",
+      "Do show every state by fill pattern (filled, hollow, half, dashed) so it survives grayscale.",
+      "Do draw every instrument with its shape, in its fixed lane, on the shared time axis, in every view that lists instruments.",
+      "Do use the three stroke weights for their jobs: 1px hairline, 1.5px control, 2px structure.",
+      "Do set measurements in Martian Mono and everything read in Jost, sized by hierarchy.",
+      "Do put the pressed/selected state in an ink fill with Sheet text, and hover in the 6% wash.",
+      "Do route any whole-plane luminance change through the flash limiter and give it a calm-mode variant."
+    ],
+    "donts": [
+      "Don't use red anywhere except Generate (and its prompt caret).",
+      "Don't round, shadow, glow, or gradient any chrome. Those effects belong only to painting textures on the plane.",
+      "Don't use hue to signal state, success, or error.",
+      "Don't add a second display face, or use mono for prose.",
+      "Don't introduce an eighth instrument shape or reorder the lanes per view.",
+      "Don't set text lighter than Pencil (`ink-3`) on Sheet.",
+      "Don't tokenize per-song instrument colors or palettes. They are runtime data."
+    ]
+  }
+}

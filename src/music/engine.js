@@ -1,5 +1,25 @@
 import * as Tone from 'tone';
 import { calculateStepTiming, humanizeNote } from './humanize.js';
+import { Mix, buildDrumKit, buildLead, buildBass, buildPad, normalizeSound } from './instruments.js';
+
+const DRUM_LANES = ['kick', 'snare', 'hat', 'clap', 'perc'];
+
+/** Beat position (from loop start) to a Transport time string. */
+function beatToTime(beats) {
+  const bar = Math.floor(beats / 4);
+  const inBar = beats - bar * 4;
+  const beat = Math.floor(inBar);
+  const sixteenth = (inBar - beat) * 4;
+  return `${bar}:${beat}:${sixteenth}`;
+}
+
+function transpose(pitch, semitones) {
+  try {
+    return Tone.Frequency(pitch).transpose(semitones).toNote();
+  } catch {
+    return pitch;
+  }
+}
 
 class MusicEngine {
   constructor() {
@@ -8,19 +28,13 @@ class MusicEngine {
     this.currentData = null;
     this.bpm = 90;
     this.bars = 2;
-    this.listeners = {
-      note: [],
-      step: [],
-      state: [],
-    };
+    this.listeners = { note: [], step: [], state: [], loading: [] };
 
-    this.synths = {};
-    this.scheduledPartIds = [];
-    this.analyser = null;
-    this.masterGain = null;
-    this.limiter = null;
+    this.mix = null;
+    this.voices = {};
+    this.voiceKey = '';
+    this.scheduledIds = [];
 
-    // Toggle for user audio vs synth
     this.playUserAudio = false;
     this.userAudioBuffer = null;
     this.userAudioPlayer = null;
@@ -28,136 +42,61 @@ class MusicEngine {
 
   async init() {
     if (this.isInitialized) return;
-
     await Tone.start();
-
-    // Master limiter and analyser
-    this.limiter = new Tone.Limiter(-1).toDestination();
-    this.analyser = new Tone.Analyser('fft', 64);
-    this.masterGain = new Tone.Gain(0.9).connect(this.limiter);
-    this.masterGain.connect(this.analyser);
-
-    // Kick: punchy low membrane
-    this.synths.kick = new Tone.MembraneSynth({
-      pitchDecay: 0.05,
-      octaves: 6,
-      oscillator: { type: 'sine' },
-      envelope: {
-        attack: 0.001,
-        decay: 0.35,
-        sustain: 0.01,
-        release: 0.4,
-      },
-    }).connect(this.masterGain);
-
-    // Snare: noise synth with snappy envelope
-    this.synths.snare = new Tone.NoiseSynth({
-      noise: { type: 'white' },
-      envelope: {
-        attack: 0.001,
-        decay: 0.22,
-        sustain: 0,
-      },
-    }).connect(this.masterGain);
-
-    // Hat: bright metallic closed hat
-    this.synths.hat = new Tone.MetalSynth({
-      frequency: 200,
-      envelope: {
-        attack: 0.001,
-        decay: 0.06,
-        release: 0.03,
-      },
-      harmonicity: 5.1,
-      modulationIndex: 32,
-      resonance: 4000,
-      octaves: 1.5,
-    }).connect(this.masterGain);
-    this.synths.hat.volume.value = -10;
-
-    // Clap: snappy pink noise with slight spread
-    this.synths.clap = new Tone.NoiseSynth({
-      noise: { type: 'pink' },
-      envelope: {
-        attack: 0.005,
-        decay: 0.18,
-        sustain: 0,
-      },
-    }).connect(this.masterGain);
-    this.synths.clap.volume.value = -3;
-
-    // Perc: high melodic percussion / rim / woodblock
-    this.synths.perc = new Tone.MembraneSynth({
-      pitchDecay: 0.02,
-      octaves: 3,
-      oscillator: { type: 'triangle' },
-      envelope: {
-        attack: 0.001,
-        decay: 0.15,
-        sustain: 0.01,
-        release: 0.1,
-      },
-    }).connect(this.masterGain);
-    this.synths.perc.volume.value = -4;
-
-    // Melody: expressive PolySynth
-    this.synths.melody = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'triangle8' },
-      envelope: {
-        attack: 0.02,
-        decay: 0.2,
-        sustain: 0.5,
-        release: 0.8,
-      },
-    }).connect(this.masterGain);
-    this.synths.melody.volume.value = -4;
-
-    // Bass: punchy sub-bass MonoSynth
-    this.synths.bass = new Tone.MonoSynth({
-      oscillator: { type: 'sawtooth' },
-      filter: {
-        Q: 2,
-        type: 'lowpass',
-        rolloff: -24,
-      },
-      envelope: {
-        attack: 0.01,
-        decay: 0.3,
-        sustain: 0.4,
-        release: 0.6,
-      },
-      filterEnvelope: {
-        attack: 0.01,
-        decay: 0.2,
-        sustain: 0.2,
-        release: 0.4,
-        baseFrequency: 60,
-        octaves: 3,
-      },
-    }).connect(this.masterGain);
-    this.synths.bass.volume.value = -2;
-
+    Tone.getContext().lookAhead = 0.08;
+    this.mix = new Mix();
     this.isInitialized = true;
+    if (this.userAudioBuffer) this.setUserAudio(this.userAudioBuffer);
+    try {
+      await this.mix.reverb.ready;
+    } catch {}
   }
 
   on(event, cb) {
-    if (this.listeners[event]) {
-      this.listeners[event].push(cb);
-    }
+    this.listeners[event]?.push(cb);
   }
 
   off(event, cb) {
-    if (this.listeners[event]) {
-      this.listeners[event] = this.listeners[event].filter(fn => fn !== cb);
-    }
+    if (this.listeners[event]) this.listeners[event] = this.listeners[event].filter((fn) => fn !== cb);
   }
 
   emit(event, data) {
-    if (this.listeners[event]) {
-      for (const fn of this.listeners[event]) {
-        try { fn(data); } catch (e) { console.error(e); }
+    for (const fn of this.listeners[event] || []) {
+      try {
+        fn(data);
+      } catch (e) {
+        console.error(e);
       }
     }
+  }
+
+  // ---------- voices ----------
+
+  /** Builds the kit, lead, bass and pad the song asks for, reusing them when unchanged. */
+  async prepareVoices() {
+    if (!this.isInitialized || !this.currentData) return;
+    const sound = normalizeSound(this.currentData.sound);
+    this.mix.setSpace(sound.reverb, sound.delay);
+    const key = [sound.drum_kit, sound.lead, sound.bass, sound.pad].join('|');
+    // Same band: wait for its samples if they are still loading
+    if (key === this.voiceKey) return this.voicesReady;
+
+    const old = this.voices;
+    this.voiceKey = key;
+    this.voices = {
+      kit: buildDrumKit(sound.drum_kit, this.mix),
+      lead: buildLead(sound.lead, this.mix),
+      bass: buildBass(sound.bass, this.mix),
+      pad: buildPad(sound.pad, this.mix),
+    };
+    // Let tails of the previous instruments ring out before freeing them
+    setTimeout(() => Object.values(old).forEach((v) => v?.dispose()), 2500);
+
+    this.emit('loading', { loading: true, sound });
+    this.voicesReady = Tone.loaded()
+      .catch((err) => console.warn('Some samples failed to load:', err))
+      .finally(() => this.emit('loading', { loading: false, sound }));
+    return this.voicesReady;
   }
 
   setUserAudio(audioBuffer) {
@@ -166,219 +105,194 @@ class MusicEngine {
       this.userAudioPlayer.dispose();
       this.userAudioPlayer = null;
     }
-    if (audioBuffer) {
-      this.userAudioPlayer = new Tone.Player(audioBuffer).connect(this.masterGain);
+    if (audioBuffer && this.mix) {
+      this.userAudioPlayer = new Tone.Player(audioBuffer).connect(this.mix.master);
       this.userAudioPlayer.loop = true;
     }
   }
 
   setPlayUserAudio(enable) {
     this.playUserAudio = enable;
+    if (this.isPlaying) this.schedulePlayback();
   }
 
-  loadSong(songData) {
+  async loadSong(songData) {
     this.currentData = songData;
     this.bpm = songData.analysis?.tempo || 90;
     this.bars = songData.drums?.bars || 2;
-
     Tone.getTransport().bpm.value = this.bpm;
 
-    if (this.isPlaying) {
-      this.schedulePlayback();
-    }
+    // Old callbacks must not play the previous song on the new instruments
+    this.clearScheduled();
+    await this.prepareVoices();
+    if (this.isPlaying && this.currentData === songData) this.schedulePlayback();
   }
 
   setBpm(bpm) {
     this.bpm = Math.max(60, Math.min(180, bpm));
     Tone.getTransport().bpm.value = this.bpm;
-    if (this.currentData?.analysis) {
-      this.currentData.analysis.tempo = this.bpm;
-    }
+    if (this.currentData?.analysis) this.currentData.analysis.tempo = this.bpm;
   }
 
   clearScheduled() {
-    for (const id of this.scheduledPartIds) {
-      Tone.getTransport().clear(id);
-    }
-    this.scheduledPartIds = [];
+    for (const id of this.scheduledIds) Tone.getTransport().clear(id);
+    this.scheduledIds = [];
   }
+
+  schedule(fn, time) {
+    this.scheduledIds.push(Tone.getTransport().schedule(fn, time));
+  }
+
+  draw(time, data, event = 'note') {
+    Tone.getDraw().schedule(() => this.emit(event, data), time);
+  }
+
+  // ---------- scheduling ----------
 
   schedulePlayback() {
     this.clearScheduled();
-    if (!this.currentData) return;
+    const song = this.currentData;
+    if (!song) return;
 
-    const { drums, melody, bass, groove = { swing: 0, humanize: 0 } } = this.currentData;
+    const { drums = {}, melody = [], bass = [], chords = [] } = song;
+    const groove = song.groove || { swing: 0, humanize: 0 };
+    // How much each pass of the loop is allowed to differ from the written part
+    const variation = Math.max(0, Math.min(1, groove.variation ?? 0.35));
     const totalSteps = this.bars * 16;
     const totalBeats = this.bars * 4;
-    const loopDuration = `${this.bars}m`;
+    const beatSec = () => 60 / this.bpm;
 
-    Tone.getTransport().loop = true;
-    Tone.getTransport().loopStart = 0;
-    Tone.getTransport().loopEnd = loopDuration;
+    const transport = Tone.getTransport();
+    transport.loop = true;
+    transport.loopStart = 0;
+    transport.loopEnd = `${this.bars}m`;
 
-    // 1. Schedule Drum Grid
-    const drumLanes = ['kick', 'snare', 'hat', 'clap', 'perc'];
-
+    // 1. Drums on the 16th grid, accented, with occasional ghost notes
     for (let step = 0; step < totalSteps; step++) {
-      // Calculate 16th time position: bar:quarter:sixteenth
-      const bar = Math.floor(step / 16);
-      const beat = Math.floor((step % 16) / 4);
-      const sixteenth = step % 4;
-      const timeStr = `${bar}:${beat}:${sixteenth}`;
-
-      const partId = Tone.getTransport().schedule((time) => {
-        // Step notification for visual beat grid
-        Tone.getDraw().schedule(() => {
-          this.emit('step', { step, totalSteps, bar, beat });
-        }, time);
-
+      this.schedule((time) => {
+        this.draw(time, { step, totalSteps }, 'step');
         const { timingOffset, velMultiplier } = calculateStepTiming(step, this.bpm, groove);
         const hitTime = time + timingOffset;
+        const accent = step % 16 === 0 ? 1 : step % 4 === 0 ? 0.92 : step % 2 === 0 ? 0.78 : 0.66;
+        const kit = this.voices.kit;
+        if (!kit) return;
 
-        for (const lane of drumLanes) {
-          if (drums && drums[lane] && drums[lane][step] === 1) {
-            const vel = Math.min(1.0, 0.85 * velMultiplier);
-
-            // Trigger synth
-            if (lane === 'kick') {
-              this.synths.kick.triggerAttackRelease('C1', '8n', hitTime, vel);
-            } else if (lane === 'snare') {
-              this.synths.snare.triggerAttackRelease('16n', hitTime, vel);
-            } else if (lane === 'hat') {
-              this.synths.hat.triggerAttackRelease('32n', hitTime, vel * 0.7);
-            } else if (lane === 'clap') {
-              this.synths.clap.triggerAttackRelease('16n', hitTime, vel);
-            } else if (lane === 'perc') {
-              this.synths.perc.triggerAttackRelease('G2', '16n', hitTime, vel);
-            }
-
-            // Sync with visual renderer and haptics via Tone.Draw
-            Tone.getDraw().schedule(() => {
-              this.emit('note', { instrument: lane, velocity: vel, time: hitTime });
-            }, hitTime);
+        for (const lane of DRUM_LANES) {
+          if (drums[lane]?.[step] === 1) {
+            const vel = Math.min(1, accent * velMultiplier);
+            kit.hit(lane, hitTime, vel, step);
+            this.draw(hitTime, { instrument: lane, velocity: vel, time: hitTime, step });
           }
         }
-      }, timeStr);
 
-      this.scheduledPartIds.push(partId);
+        const ghostHat = !drums.hat?.[step] && step % 2 === 1 && Math.random() < variation * 0.14;
+        const ghostSnare = !drums.snare?.[step] && !drums.kick?.[step] && Math.random() < variation * 0.05;
+        if (ghostHat) {
+          kit.hit('hat', hitTime, 0.3, step);
+          this.draw(hitTime, { instrument: 'hat', velocity: 0.3, time: hitTime, step });
+        }
+        if (ghostSnare) {
+          kit.hit('snare', hitTime, 0.22);
+          this.draw(hitTime, { instrument: 'snare', velocity: 0.22, time: hitTime, step });
+        }
+      }, `0:0:${step}`);
     }
 
-    // 2. Schedule Melody
-    if (melody && Array.isArray(melody)) {
-      for (const rawNote of melody) {
-        const note = humanizeNote(rawNote, this.bpm, groove);
-        if (note.start >= totalBeats) continue;
+    // 2. Melody: each pass may rest, jump an octave, or add a passing note from the melody's own pitches
+    const melodyPitches = [...new Set(melody.map((n) => n.pitch))];
+    for (const raw of melody) {
+      const note = humanizeNote(raw, this.bpm, groove);
+      if (note.start >= totalBeats) continue;
+      this.schedule((time) => {
+        if (this.playUserAudio && this.userAudioPlayer) return;
+        if (Math.random() < variation * 0.12) return; // breathe: leave this one out
 
-        // Convert beat position to Transport time
-        const bar = Math.floor(note.start / 4);
-        const beatRemainder = note.start % 4;
-        const beat = Math.floor(beatRemainder);
-        const sixteenthRemainder = (beatRemainder - beat) * 4;
-        const sixteenth = Math.floor(sixteenthRemainder);
-        const frac = sixteenthRemainder - sixteenth;
-        const timeStr = `${bar}:${beat}:${sixteenth + frac}`;
+        let pitch = note.pitch;
+        if (Math.random() < variation * 0.12) {
+          const up = transpose(pitch, 12);
+          const down = transpose(pitch, -12);
+          pitch = Tone.Frequency(up).toMidi() <= 88 && Math.random() < 0.6 ? up : down;
+        }
 
-        const partId = Tone.getTransport().schedule((time) => {
-          if (!this.playUserAudio || !this.userAudioPlayer) {
-            this.synths.melody.triggerAttackRelease(
-              note.pitch,
-              Tone.Time(`${note.dur} * 4n`).toSeconds(),
-              time,
-              note.vel || 0.8
-            );
-          }
+        const vel = Math.min(1, note.vel * (0.85 + Math.random() * 0.25));
+        const durSec = note.dur * beatSec();
+        const ornament = note.dur >= 0.5 && melodyPitches.length > 1 && Math.random() < variation * 0.3;
+        const mainDur = ornament ? durSec / 2 : durSec;
+        this.voices.lead?.play(pitch, mainDur, time, vel);
+        this.draw(time, { instrument: 'melody', pitch, velocity: vel, time, start: raw.start, dur: ornament ? note.dur / 2 : note.dur });
 
-          Tone.getDraw().schedule(() => {
-            this.emit('note', {
-              instrument: 'melody',
-              pitch: note.pitch,
-              velocity: note.vel || 0.8,
-              time,
-            });
-          }, time);
-        }, timeStr);
-
-        this.scheduledPartIds.push(partId);
-      }
+        if (ornament) {
+          const others = melodyPitches.filter((p) => p !== raw.pitch);
+          const passing = others[Math.floor(Math.random() * others.length)];
+          const t2 = time + mainDur;
+          this.voices.lead?.play(passing, mainDur, t2, vel * 0.85);
+          this.draw(t2, { instrument: 'melody', pitch: passing, velocity: vel * 0.85, time: t2, start: raw.start + note.dur / 2, dur: note.dur / 2 });
+        }
+      }, beatToTime(note.start));
     }
 
-    // 3. Schedule Bass
-    if (bass && Array.isArray(bass)) {
-      for (const rawNote of bass) {
-        const note = humanizeNote(rawNote, this.bpm, groove);
-        if (note.start >= totalBeats) continue;
-
-        const bar = Math.floor(note.start / 4);
-        const beatRemainder = note.start % 4;
-        const beat = Math.floor(beatRemainder);
-        const sixteenthRemainder = (beatRemainder - beat) * 4;
-        const sixteenth = Math.floor(sixteenthRemainder);
-        const frac = sixteenthRemainder - sixteenth;
-        const timeStr = `${bar}:${beat}:${sixteenth + frac}`;
-
-        const partId = Tone.getTransport().schedule((time) => {
-          this.synths.bass.triggerAttackRelease(
-            note.pitch,
-            Tone.Time(`${note.dur} * 4n`).toSeconds(),
-            time,
-            note.vel || 0.85
-          );
-
-          Tone.getDraw().schedule(() => {
-            this.emit('note', {
-              instrument: 'bass',
-              pitch: note.pitch,
-              velocity: note.vel || 0.85,
-              time,
-            });
-          }, time);
-        }, timeStr);
-
-        this.scheduledPartIds.push(partId);
-      }
+    // 3. Bass
+    for (const raw of bass) {
+      const note = humanizeNote(raw, this.bpm, groove);
+      if (note.start >= totalBeats) continue;
+      this.schedule((time) => {
+        const pop = note.dur <= 0.5 && Math.random() < variation * 0.1;
+        const pitch = pop ? transpose(note.pitch, 12) : note.pitch;
+        this.voices.bass?.play(pitch, note.dur * beatSec(), time, note.vel);
+        this.draw(time, { instrument: 'bass', pitch: note.pitch, velocity: note.vel, time, start: raw.start, dur: note.dur });
+      }, beatToTime(note.start));
     }
 
-    // 4. Schedule User Audio if enabled
+    // 4. Chords on the pad
+    for (const chord of chords) {
+      if (chord.start >= totalBeats || !chord.pitches?.length) continue;
+      this.schedule((time) => {
+        const vel = (chord.vel ?? 0.6) * (0.9 + Math.random() * 0.15);
+        this.voices.pad?.playChord(chord.pitches, chord.dur * beatSec(), time, vel);
+        for (const p of chord.pitches) {
+          this.draw(time, { instrument: 'chords', pitch: p, velocity: vel, time, start: chord.start, dur: chord.dur });
+        }
+      }, beatToTime(chord.start));
+    }
+
+    // 5. The user's own recording, if chosen instead of the synth melody
     if (this.playUserAudio && this.userAudioPlayer) {
-      const audioPartId = Tone.getTransport().schedule((time) => {
-        this.userAudioPlayer.start(time);
-      }, '0:0:0');
-      this.scheduledPartIds.push(audioPartId);
+      this.schedule((time) => this.userAudioPlayer.start(time), '0:0:0');
     }
   }
 
   async play() {
     await this.init();
     if (this.isPlaying) return;
-
+    await this.prepareVoices();
     this.schedulePlayback();
     Tone.getTransport().position = 0;
-    Tone.getTransport().start();
+    Tone.getTransport().start('+0.05');
     this.isPlaying = true;
     this.emit('state', { isPlaying: true });
   }
 
   stop() {
     Tone.getTransport().stop();
-    if (this.userAudioPlayer) {
-      try { this.userAudioPlayer.stop(); } catch (e) {}
-    }
+    const now = Tone.now();
+    this.voices.lead?.release(now);
+    this.voices.pad?.release(now);
+    this.voices.bass?.release(now);
+    try {
+      this.userAudioPlayer?.stop();
+    } catch {}
     this.isPlaying = false;
     this.emit('state', { isPlaying: false });
-    this.emit('step', { step: -1, totalSteps: this.bars * 16, bar: -1, beat: -1 });
+    this.emit('step', { step: -1, totalSteps: this.bars * 16 });
   }
 
   togglePlay() {
-    if (this.isPlaying) {
-      this.stop();
-    } else {
-      this.play();
-    }
+    if (this.isPlaying) this.stop();
+    else this.play();
   }
 
   getAnalyserData() {
-    if (!this.analyser) return new Float32Array(64);
-    return this.analyser.getValue();
+    return this.mix ? this.mix.analyser.getValue() : new Float32Array(64);
   }
 }
 

@@ -23,7 +23,7 @@ app.get('/api/health', (req, res) => {
 
 // Generate endpoint
 app.post('/api/generate', async (req, res) => {
-  const { prompt, audioBase64, extractedNotes, taps, providedHint } = req.body || {};
+  const { prompt, audioBase64, extractedNotes, taps, providedHint, avoidPresetId } = req.body || {};
 
   try {
     const result = await generateJam({
@@ -32,6 +32,7 @@ app.post('/api/generate', async (req, res) => {
       extractedNotes,
       taps,
       providedHint: providedHint || 'prompt',
+      avoidPresetId,
     });
 
     res.json({
@@ -41,6 +42,7 @@ app.post('/api/generate', async (req, res) => {
       elapsedMs: result.elapsedMs,
       raw: result.raw,
       error: result.error,
+      model: result.model,
     });
   } catch (err) {
     console.error('Unhandled error in /api/generate:', err.message);
@@ -68,6 +70,7 @@ app.post('/api/refine', async (req, res) => {
       elapsedMs: result.elapsedMs,
       raw: result.raw,
       error: result.error,
+      model: result.model,
     });
   } catch (err) {
     console.error('Unhandled error in /api/refine:', err.message);

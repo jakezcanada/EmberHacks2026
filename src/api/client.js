@@ -6,6 +6,7 @@ export async function generateJamRequest({
   extractedNotes = [],
   taps = [],
   providedHint = 'prompt',
+  avoidPresetId = null,
 }) {
   const payload = {
     prompt,
@@ -13,6 +14,7 @@ export async function generateJamRequest({
     extractedNotes,
     taps,
     providedHint,
+    avoidPresetId,
   };
 
   try {
@@ -36,13 +38,19 @@ export async function generateJamRequest({
       fallback: Boolean(data.fallback),
       elapsedMs: data.elapsedMs,
       raw: data.raw,
+      error: data.error,
+      model: data.model,
       requestPayload: payload,
     };
   } catch (err) {
     console.warn('[ApiClient] API call failed or network unavailable, using local fallback:', err);
     // Find matching fallback preset
-    let matched = fallbackPresets.find(p => p.analysis?.provided === providedHint);
-    if (!matched) matched = fallbackPresets[0];
+    // Same rule as the server: any fitting preset except the one already playing
+    const matching = fallbackPresets.filter((p) => p.analysis?.provided === providedHint);
+    const pool = (providedHint === 'melody' || providedHint === 'drums') && matching.length ? matching : fallbackPresets;
+    const fresh = pool.filter((p) => p.id !== avoidPresetId);
+    const choices = fresh.length ? fresh : pool;
+    const matched = choices[Math.floor(Math.random() * choices.length)];
     const fallbackCopy = JSON.parse(JSON.stringify(matched));
     fallbackCopy.fallback = true;
 
@@ -81,6 +89,8 @@ export async function refineJamRequest({ previousResult, instruction }) {
       fallback: Boolean(data.fallback),
       elapsedMs: data.elapsedMs,
       raw: data.raw,
+      error: data.error,
+      model: data.model,
       requestPayload: payload,
     };
   } catch (err) {

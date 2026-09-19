@@ -50,7 +50,7 @@ export function exportMidiFile(songData, filename = 'chromajam.mid') {
   // 2. Melody Track
   if (songData.melody && songData.melody.length > 0) {
     const melodyTrack = midi.addTrack();
-    melodyTrack.name = `Melody - Key: ${songData.analysis?.key || 'C major'}`;
+    melodyTrack.name = `Melody (${songData.sound?.lead || 'lead'}) - Key: ${songData.analysis?.key || 'C major'}`;
     melodyTrack.channel = 0;
 
     for (const note of songData.melody) {
@@ -76,6 +76,18 @@ export function exportMidiFile(songData, filename = 'chromajam.mid') {
         duration: note.dur * beatSec,
         velocity: note.vel || 0.85,
       });
+    }
+  }
+
+  // 4. Chords Track
+  if (songData.chords && songData.chords.length > 0) {
+    const chordTrack = midi.addTrack();
+    chordTrack.name = `Chords - ${songData.sound?.pad || 'pad'}`;
+    chordTrack.channel = 2;
+    for (const chord of songData.chords) {
+      for (const pitch of chord.pitches || []) {
+        chordTrack.addNote({ name: pitch, time: chord.start * beatSec, duration: chord.dur * beatSec, velocity: chord.vel || 0.6 });
+      }
     }
   }
 

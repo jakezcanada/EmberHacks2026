@@ -11,183 +11,280 @@ import { hapticController } from './a11y/haptics.js';
 import { SettingsManager } from './a11y/settings.js';
 import { ControlsBar } from './ui/controls.js';
 import { DebugPanel } from './ui/debugPanel.js';
+import { SongSheet } from './ui/songSheet.js';
 import fallbackPresets from './fallback/presets.json';
+
+const MAX_AUDIO_SECONDS = 15;
+const EXAMPLE_LABELS = ['Lo-fi', 'Synthwave', 'Trap', 'Ambient'];
+const INTERACTIVE = 'button, input, select, textarea, a, summary, [role="switch"], [role="tab"], [contenteditable="true"]';
 
 class ChromajamApp {
   constructor() {
     this.currentSong = null;
     this.audioBase64 = null;
+    this.audioDuration = 0;
     this.extractedNotes = [];
-    this.recordedAudioBuffer = null;
-    this.recorder = new AudioRecorder(15);
-    this.tapTracker = new TapTracker();
     this.tapTimes = [];
+    this.isBusy = false;
+    this.engine = musicEngine; // handy for debugging from the console (window.chromajam.engine)
+    this.recorder = new AudioRecorder(MAX_AUDIO_SECONDS);
+    this.tapTracker = new TapTracker();
 
-    // Canvas & Visual Renderer
     this.canvas = document.getElementById('visual-canvas');
     this.renderer = new VisualRenderer(this.canvas);
     this.renderer.setAnalyserSource(() => musicEngine.getAnalyserData());
 
-    // UI Drawers
-    this.settingsDrawer = document.getElementById('settings-drawer');
-    this.debugDrawer = document.getElementById('debug-drawer');
-    this.controlsContainer = document.getElementById('controls-container');
-
-    // Modules
-    this.debugPanel = new DebugPanel(this.debugDrawer);
-    this.settingsManager = new SettingsManager((customs) => {
-      this.renderer.setVisualConfig({
-        instrument_colors: customs.instrumentColors,
-        instrument_shapes: customs.instrumentShapes,
-      });
-    });
-    this.settingsManager.renderDrawer(this.settingsDrawer);
-
-    // Controls Bar
-    this.controls = new ControlsBar(this.controlsContainer, {
-      onGenerate: (prompt) => this.handleGenerate(prompt),
-      onRefine: (inst) => this.handleRefine(inst),
-      onToggleRecord: () => this.handleToggleRecord(),
-      onFileUpload: (file) => this.handleFileUpload(file),
-      onTap: () => this.handleTap(),
-      onTogglePlay: () => this.handleTogglePlay(),
-      onChangeBpm: (bpm) => this.handleChangeBpm(bpm),
-      onToggleUserAudio: (playAudio) => musicEngine.setPlayUserAudio(playAudio),
-      onDownloadMidi: () => exportMidiFile(this.currentSong, `${this.currentSong?.analysis?.genre_hint?.replace(/\s+/g, '_') || 'chromajam'}.mid`),
-      onToggleSettings: () => this.toggleSettings(),
-      onToggleDebug: () => this.debugPanel.toggle(),
+    this.panels = {
+      song: document.getElementById('panel-song'),
+      io: document.getElementById('panel-io'),
+      access: document.getElementById('panel-access'),
+    };
+    this.songSheet = new SongSheet(this.panels.song, { onRefine: (i) => this.handleRefine(i) });
+    this.debugPanel = new DebugPanel(this.panels.io);
+    this.settings = new SettingsManager({
+      onVisualChange: () => this.refreshVisual(),
+      onCalmChange: (on) => this.syncCalmButton(on),
     });
 
-    // Wire up music engine events
+    this.controls = new ControlsBar(
+      document.getElementById('composer'),
+      {
+        onGenerate: (prompt) => this.handleGenerate(prompt),
+        onToggleRecord: () => this.handleToggleRecord(),
+        onFileUpload: (file) => this.handleFileUpload(file),
+        onTap: () => this.handleTap(),
+        onClearCapture: () => this.clearCapture(),
+        onTogglePlay: () => this.handleTogglePlay(),
+        onChangeBpm: (bpm) => this.handleChangeBpm(bpm),
+        onToggleUserAudio: (mine) => musicEngine.setPlayUserAudio(mine),
+        onExample: (i) => this.loadExample(i),
+        onDownloadMidi: () => this.handleDownloadMidi(),
+      },
+      { examples: fallbackPresets.map((p, index) => ({ index, label: EXAMPLE_LABELS[index] || p.analysis.genre_hint })) }
+    );
+
     musicEngine.on('note', (event) => {
       this.renderer.handleNoteEvent(event);
+      this.songSheet.flash(event.instrument);
       hapticController.trigger(event.instrument);
     });
-
-    musicEngine.on('step', ({ step, totalSteps }) => {
-      this.renderer.setPlayheadStep(step, totalSteps);
+    musicEngine.on('step', ({ step, totalSteps }) => this.renderer.setPlayheadStep(step, totalSteps));
+    musicEngine.on('state', ({ isPlaying }) => this.controls.setPlayState(isPlaying));
+    musicEngine.on('loading', ({ loading }) => {
+      if (loading) this.showToast('Loading instruments…', 0);
+      else if (document.getElementById('toast').textContent === 'Loading instruments…') document.getElementById('toast').hidden = true;
     });
 
-    musicEngine.on('state', ({ isPlaying }) => {
-      this.controls.setPlayState(isPlaying);
-    });
+    this.initTabs();
+    this.initMasthead();
+    this.initKeyboard();
+    this.initPaintBack();
 
-    // Wire header preset chips for instant 30-second first-time experience
-    this.initHeaderPresets();
-
-    // Wire keyboard navigation and accessibility shortcuts
-    this.initKeyboardShortcuts();
-
-    // Wire canvas drag gestures (Phase 6 Paint-Back stretch)
-    this.initCanvasPaintBack();
-
-    // Start rendering loop
     this.renderer.start();
-
-    // Load initial default preset so canvas is instantly alive
-    this.loadInitialSong(fallbackPresets[0]);
+    this.loadExample(0, { quiet: true });
   }
 
-  showToast(msg, duration = 3000) {
-    const toast = document.getElementById('toast-message');
-    if (!toast) return;
-    toast.textContent = msg;
-    toast.style.display = 'block';
-    clearTimeout(this.toastTimeout);
-    this.toastTimeout = setTimeout(() => {
-      toast.style.display = 'none';
-    }, duration);
+  // ---------- song state ----------
+
+  mergedVisual(song = this.currentSong) {
+    const v = song?.visual || {};
+    const c = this.settings.customizations;
+    return {
+      ...v,
+      instrument_colors: { ...v.instrument_colors, ...c.instrumentColors },
+      instrument_shapes: { ...v.instrument_shapes, ...c.instrumentShapes },
+    };
   }
 
-  showLoading(show, message = 'Gemini is listening and composing...') {
-    const overlay = document.getElementById('loading-overlay');
-    const msgEl = document.getElementById('loading-message');
-    if (overlay) overlay.style.display = show ? 'flex' : 'none';
-    if (msgEl) msgEl.textContent = message;
-    this.controls.setLoading(show);
-  }
-
-  loadInitialSong(preset) {
-    this.currentSong = preset;
-    musicEngine.loadSong(preset);
-    this.renderer.setVisualConfig(preset.visual);
-    this.controls.setBpm(preset.analysis?.tempo || 90);
-    this.debugPanel.update({
-      requestPayload: { prompt: 'Default Lo-Fi Groove', providedHint: 'prompt' },
-      data: preset,
-      fallback: true,
-      elapsedMs: 0,
+  refreshVisual() {
+    const visual = this.mergedVisual();
+    const { calm_mode_recommended, ...rest } = visual;
+    this.renderer.setVisualConfig(rest);
+    this.songSheet.render(this.currentSong, {
+      colors: visual.instrument_colors,
+      shapes: visual.instrument_shapes,
+      isExample: this.currentSource === 'example',
+      isFallback: this.currentFallback,
     });
   }
 
-  initHeaderPresets() {
-    const presetMap = {
-      'header-preset-lofi': 0,
-      'header-preset-synth': 1,
-      'header-preset-trap': 2,
-      'header-preset-ambient': 3,
-    };
+  applySong(song, meta, { source = 'gemini', autoplay = true } = {}) {
+    this.currentSong = song;
+    this.currentSource = source;
+    this.currentFallback = Boolean(meta?.fallback);
+    musicEngine.loadSong(song);
+    this.renderer.setSong(song);
+    this.renderer.setVisualConfig(this.mergedVisual(song));
+    this.controls.setBpm(song.analysis?.tempo || 90);
+    this.refreshVisual();
+    this.settings.render(this.panels.access, song.visual);
+    this.debugPanel.update({ ...meta, source, audioDuration: this.audioDuration });
+    this.sourceState = [source === 'example' ? 'example' : meta?.fallback ? 'fallback' : 'live', this.sourceDetail(source, meta)];
+    this.setSourceState(...this.sourceState);
+    this.syncCalmButton(safetyManager.calmMode);
+    this.describeCanvas();
+    if (autoplay && !musicEngine.isPlaying) musicEngine.play();
+  }
 
-    for (const [btnId, idx] of Object.entries(presetMap)) {
-      document.getElementById(btnId)?.addEventListener('click', () => {
-        const preset = fallbackPresets[idx];
-        if (preset) {
-          this.applyNewSong(preset, {
-            requestPayload: { prompt: `Preset: ${preset.analysis.genre_hint}`, providedHint: preset.analysis.provided },
-            data: preset,
-            fallback: true,
-            elapsedMs: 0,
-          });
-          this.showToast(`Loaded ${preset.analysis.genre_hint} preset`);
-        }
+  loadExample(index, { quiet = false } = {}) {
+    const preset = fallbackPresets[index];
+    if (!preset) return;
+    this.applySong(
+      structuredClone(preset),
+      { requestPayload: { prompt: '', providedHint: preset.analysis.provided }, data: preset, fallback: true, elapsedMs: 0 },
+      { source: 'example', autoplay: !quiet }
+    );
+    if (!quiet) this.showToast(`Example loaded: ${preset.analysis.genre_hint}`);
+  }
+
+  describeCanvas() {
+    const a = this.currentSong?.analysis || {};
+    const v = this.mergedVisual();
+    const parts = ['melody', 'kick', 'snare', 'hat', 'bass']
+      .map((i) => `${i} as a ${v.instrument_shapes?.[i]}`)
+      .join(', ');
+    this.canvas.setAttribute(
+      'aria-label',
+      `Visual score of a ${a.genre_hint || 'loop'} at ${a.tempo || ''} BPM in ${a.key || 'an unknown key'}. Each instrument has its own line: ${parts}.`
+    );
+  }
+
+  setSourceState(state, detail = '') {
+    const el = document.getElementById('source-state');
+    el.dataset.state = state;
+    document.getElementById('source-label').textContent = { live: 'Gemini', fallback: 'Fallback preset', example: 'Example preset', busy: 'Composing' }[state];
+    document.getElementById('source-detail').textContent = detail;
+  }
+
+  sourceDetail(source, meta) {
+    if (source === 'example') return 'Gemini not called';
+    if (meta?.fallback) return 'Gemini unavailable';
+    const ms = meta?.elapsedMs || 0;
+    return `live · ${ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`}`;
+  }
+
+  // ---------- chrome ----------
+
+  initTabs() {
+    this.tabs = [...document.querySelectorAll('.sheet-tabs [role="tab"]')];
+    this.tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => this.selectTab(tab.id.replace('tab-', '')));
+      tab.addEventListener('keydown', (e) => {
+        const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!dir) return;
+        e.preventDefault();
+        const next = this.tabs[(i + dir + this.tabs.length) % this.tabs.length];
+        this.selectTab(next.id.replace('tab-', ''), { focus: true });
       });
+    });
+  }
+
+  selectTab(name, { focus = false } = {}) {
+    for (const tab of this.tabs) {
+      const on = tab.id === `tab-${name}`;
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      if (on && focus) tab.focus();
+    }
+    for (const [key, panel] of Object.entries(this.panels)) panel.hidden = key !== name;
+    document.getElementById('access-btn').setAttribute('aria-pressed', String(name === 'access'));
+  }
+
+  initMasthead() {
+    document.getElementById('calm-btn').addEventListener('click', () => this.settings.setCalm(!safetyManager.calmMode));
+    document.getElementById('access-btn').addEventListener('click', () => {
+      this.selectTab('access');
+      document.querySelector('.sheet').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
+  syncCalmButton(on) {
+    document.getElementById('calm-btn').setAttribute('aria-pressed', String(on));
+  }
+
+  showToast(msg, duration = 3200) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.hidden = false;
+    clearTimeout(this.toastTimer);
+    if (duration > 0) this.toastTimer = setTimeout(() => (toast.hidden = true), duration);
+  }
+
+  setBusy(on, label = 'Gemini is composing') {
+    this.isBusy = on;
+    this.controls.setLoading(on);
+    this.renderer.setDeveloping(on);
+    clearInterval(this.busyTimer);
+    if (on) {
+      // The masthead badge carries the composing state; no toast repeats it
+      document.getElementById('toast').hidden = true;
+      document.getElementById('source-state').title = label;
+      const started = performance.now();
+      const tick = () => this.setSourceState('busy', `${((performance.now() - started) / 1000).toFixed(1)} s`);
+      tick();
+      this.busyTimer = setInterval(tick, 100);
+    } else {
+      if (this.sourceState) this.setSourceState(...this.sourceState);
     }
   }
 
-  initKeyboardShortcuts() {
+  initKeyboard() {
     window.addEventListener('keydown', (e) => {
-      // Don't trigger shortcuts when typing in an input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-        return;
-      }
-
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target.closest?.(INTERACTIVE) || e.target.closest?.('pre')) return;
+      const key = e.key.toLowerCase();
       if (e.code === 'Space') {
         e.preventDefault();
         this.handleTogglePlay();
-      } else if (e.key === 'd' || e.key === 'D') {
-        e.preventDefault();
-        this.debugPanel.toggle();
-      } else if (e.key === 's' || e.key === 'S') {
-        e.preventDefault();
-        this.toggleSettings();
-      } else if (e.key === 'Escape') {
-        this.settingsDrawer.classList.remove('open');
-        this.debugDrawer.classList.remove('open');
+      } else if (key === 't') {
+        this.handleTap();
+      } else if (key === 'd') {
+        const ioOpen = !this.panels.io.hidden;
+        this.selectTab(ioOpen ? 'song' : 'io');
+      } else if (key === 'a' || key === 's') {
+        this.selectTab('access');
+      } else if (key === 'escape') {
+        this.selectTab('song');
       }
     });
   }
 
-  toggleSettings() {
-    const isOpen = this.settingsDrawer.classList.contains('open');
-    if (isOpen) {
-      this.settingsDrawer.classList.remove('open');
-    } else {
-      this.settingsDrawer.classList.add('open');
-      this.settingsManager.updateCurrentInstrumentInputs(
-        this.settingsDrawer,
-        this.currentSong?.visual
-      );
-    }
-  }
+  // ---------- transport ----------
 
   async handleTogglePlay() {
     await musicEngine.init();
     musicEngine.togglePlay();
   }
 
-  handleChangeBpm(newBpm) {
-    musicEngine.setBpm(newBpm);
+  handleChangeBpm(bpm) {
+    musicEngine.setBpm(bpm);
     this.controls.setBpm(musicEngine.bpm);
+    this.renderer.setTempo(musicEngine.bpm);
+  }
+
+  handleDownloadMidi() {
+    const name = (this.currentSong?.analysis?.genre_hint || 'chromajam').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    try {
+      exportMidiFile(this.currentSong, `chromajam-${name}.mid`);
+      this.showToast('MIDI downloaded · drums, melody and bass tracks');
+    } catch (err) {
+      console.error('MIDI export failed:', err);
+      this.showToast('Could not build a MIDI file for this song');
+    }
+  }
+
+  // ---------- inputs ----------
+
+  clearCapture() {
+    this.audioBase64 = null;
+    this.audioDuration = 0;
+    this.extractedNotes = [];
+    this.tapTimes = [];
+    this.tapTracker.reset();
+    musicEngine.setPlayUserAudio(false);
+    this.controls.setUserAudioMode(false);
+    this.controls.setUserAudioAvailable(false);
+    this.controls.setCaptured(null);
   }
 
   async handleToggleRecord() {
@@ -195,205 +292,135 @@ class ChromajamApp {
       this.recorder.stop();
       return;
     }
-
     try {
-      this.controls.setRecordingState(true, 0, 15);
-      this.showToast('Recording... Hum a melody or tap a rhythm');
-
-      const audioBlob = await this.recorder.start((elapsed, max) => {
-        this.controls.setRecordingState(true, elapsed, max);
-      });
-
+      this.controls.setRecordingState(true, 0, MAX_AUDIO_SECONDS);
+      this.showToast('Listening · hum, then press Stop');
+      const blob = await this.recorder.start((elapsed, max) => this.controls.setRecordingState(true, elapsed, max));
       this.controls.setRecordingState(false);
-      this.showLoading(true, 'Processing audio & extracting notes...');
-
-      const { base64, duration, pcmData, audioBuffer } = await processAudioToWav(audioBlob);
-      this.audioBase64 = base64;
-      this.recordedAudioBuffer = audioBuffer;
-      musicEngine.setUserAudio(audioBuffer);
-      this.controls.setUserAudioAvailable(true);
-
-      const extraction = extractNotesFromAudio(pcmData, 16000);
-      this.extractedNotes = extraction.notes;
-
-      this.showLoading(false);
-      this.showToast(`Extracted ${this.extractedNotes.length} notes (est. ${extraction.tempo} BPM). Ready to generate!`);
+      await this.ingestAudio(blob, 'Melody');
     } catch (err) {
       this.controls.setRecordingState(false);
-      this.showLoading(false);
       console.error('Microphone error:', err);
-      this.showToast('Microphone access denied or failed. You can still type prompts or upload audio.');
+      this.showToast('Microphone blocked · type a vibe or upload a clip', 4500);
     }
   }
 
   async handleFileUpload(file) {
-    if (!file) return;
     try {
-      this.showLoading(true, 'Reading and decoding audio file...');
-      const { base64, duration, pcmData, audioBuffer } = await processAudioToWav(file);
-      this.audioBase64 = base64;
-      this.recordedAudioBuffer = audioBuffer;
-      musicEngine.setUserAudio(audioBuffer);
-      this.controls.setUserAudioAvailable(true);
-
-      const extraction = extractNotesFromAudio(pcmData, 16000);
-      this.extractedNotes = extraction.notes;
-
-      this.showLoading(false);
-      this.showToast(`Loaded audio: ${this.extractedNotes.length} notes extracted (est. ${extraction.tempo} BPM).`);
+      await this.ingestAudio(file, 'Clip');
     } catch (err) {
-      this.showLoading(false);
       console.error('File processing error:', err);
-      this.showToast('Could not process audio file.');
+      this.showToast('Could not read that file · try a short WAV or MP3', 4500);
     }
+  }
+
+  async ingestAudio(blobOrFile, kind) {
+    this.showToast('Finding the notes…');
+    const { base64, duration, pcmData, audioBuffer } = await processAudioToWav(blobOrFile);
+    this.audioBase64 = base64;
+    this.audioDuration = duration;
+    musicEngine.setUserAudio(audioBuffer);
+    this.controls.setUserAudioAvailable(true);
+    const extraction = extractNotesFromAudio(pcmData, 16000);
+    this.extractedNotes = extraction.notes;
+    this.tapTimes = [];
+    const n = this.extractedNotes.length;
+    this.controls.setCaptured(`${kind} · ${n} ${n === 1 ? 'note' : 'notes'} · ~${extraction.tempo} BPM`);
+    this.showToast(n ? `Heard ${n} notes · press Generate for drums` : 'No clear notes · Gemini will read the mood', 4000);
   }
 
   handleTap() {
-    const tapInfo = this.tapTracker.tap();
-    this.tapTimes = tapInfo.relativeTimes;
-    this.controls.setTapState(tapInfo.tapsCount, tapInfo.bpm);
-
-    if (tapInfo.bpm) {
-      this.handleChangeBpm(tapInfo.bpm);
+    const info = this.tapTracker.tap();
+    this.tapTimes = info.relativeTimes;
+    if (info.tapsCount > 1 && info.bpm) {
+      this.controls.setCaptured(`Rhythm · ${info.tapsCount} taps · ${info.bpm} BPM`);
+      this.handleChangeBpm(info.bpm);
+    } else {
+      this.controls.setCaptured('Rhythm · keep tapping');
     }
   }
 
+  // ---------- Gemini ----------
+
   async handleGenerate(promptText) {
-    await musicEngine.init();
+    if (this.isBusy) return;
+    // Start audio inside the click gesture, but don't make the request wait for it
+    const audioReady = musicEngine.init();
 
-    // Determine hint
     let providedHint = 'prompt';
-    if (this.extractedNotes.length > 0) {
-      providedHint = 'melody';
-    } else if (this.tapTimes.length > 1) {
-      providedHint = 'drums';
+    if (this.extractedNotes.length > 0) providedHint = 'melody';
+    else if (this.tapTimes.length > 1) providedHint = 'drums';
+
+    if (providedHint === 'prompt' && !promptText && !this.audioBase64) {
+      this.showToast('Type a vibe, hum or tap first');
+      document.getElementById('prompt-input').focus();
+      return;
     }
 
-    this.showLoading(true, 'Gemini is composing your missing half and visual style...');
+    this.setBusy(true, providedHint === 'melody' ? 'Gemini is writing drums for your melody' : providedHint === 'drums' ? 'Gemini is writing a melody for your rhythm' : 'Gemini is composing');
+    const response = await generateJamRequest({
+      prompt: promptText,
+      audioBase64: this.audioBase64,
+      extractedNotes: this.extractedNotes,
+      taps: this.tapTimes,
+      providedHint,
+      avoidPresetId: this.currentSong?.id || null,
+    });
+    await audioReady;
+    this.setBusy(false);
 
-    try {
-      const response = await generateJamRequest({
-        prompt: promptText,
-        audioBase64: this.audioBase64,
-        extractedNotes: this.extractedNotes,
-        taps: this.tapTimes,
-        providedHint,
-      });
-
-      this.showLoading(false);
-      this.applyNewSong(response.data, response);
-
-      if (response.fallback) {
-        this.showToast('Fallback preset loaded (offline or rate limit safe)');
-      } else {
-        this.showToast('Gemini generation complete! Jam is live.');
-      }
-    } catch (err) {
-      this.showLoading(false);
-      console.error('Generate failed:', err);
-      this.showToast('Error generating jam. Loaded safe fallback.');
-    }
+    this.applySong(response.data, response, { source: 'gemini' });
+    this.showToast(response.fallback ? 'Gemini unavailable · playing a matching preset' : 'New song from Gemini is playing', 4200);
   }
 
   async handleRefine(instruction) {
-    if (!this.currentSong) return;
+    if (!this.currentSong || this.isBusy) return;
+    this.setBusy(true, 'Gemini is revising');
+    const response = await refineJamRequest({ previousResult: this.currentSong, instruction });
+    this.setBusy(false);
 
-    this.showLoading(true, `Refining jam: "${instruction}"...`);
-
-    try {
-      const response = await refineJamRequest({
-        previousResult: this.currentSong,
-        instruction,
-      });
-
-      this.showLoading(false);
-      this.applyNewSong(response.data, response);
-      this.showToast(`Refined: ${instruction}`);
-    } catch (err) {
-      this.showLoading(false);
-      console.error('Refine failed:', err);
-      this.showToast('Refinement failed.');
+    if (response.error) {
+      this.showToast('Gemini unavailable · keeping the current song', 4000);
+      return;
     }
+    this.applySong(response.data, response, { source: 'gemini' });
+    this.showToast(`Revised: ${instruction}`);
   }
 
-  applyNewSong(songData, responseMetadata) {
-    this.currentSong = songData;
-    musicEngine.loadSong(songData);
-
-    const mergedVisual = {
-      ...songData.visual,
-      instrument_colors: {
-        ...songData.visual?.instrument_colors,
-        ...this.settingsManager.customizations.instrumentColors,
-      },
-      instrument_shapes: {
-        ...songData.visual?.instrument_shapes,
-        ...this.settingsManager.customizations.instrumentShapes,
-      },
-    };
-
-    this.renderer.setVisualConfig(mergedVisual);
-    this.controls.setBpm(songData.analysis?.tempo || 90);
-
-    if (responseMetadata) {
-      this.debugPanel.update(responseMetadata);
-    }
-
-    if (!musicEngine.isPlaying) {
-      musicEngine.play();
-    }
-  }
-
-  /**
-   * Phase 6 Paint-Back: drag gestures on canvas re-shape the music via /api/refine
-   */
-  initCanvasPaintBack() {
-    let isDragging = false;
-    let startX = 0, startY = 0;
-    let startTime = 0;
-
-    this.canvas.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      startTime = performance.now();
+  /** Paint-back: a deliberate drag across the painting becomes a refine instruction. */
+  initPaintBack() {
+    let start = null;
+    this.canvas.addEventListener('pointerdown', (e) => {
+      start = { x: e.clientX, y: e.clientY, t: performance.now() };
     });
+    window.addEventListener('pointerup', (e) => {
+      if (!start) return;
+      const s = start;
+      start = null;
+      const rect = this.canvas.getBoundingClientRect();
+      const planeH = this.renderer.plane?.h || rect.height;
+      if (s.y - rect.top > planeH) return; // drags on the score do nothing
 
-    window.addEventListener('mouseup', (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
+      const dx = e.clientX - s.x;
+      const dy = e.clientY - s.y;
       const dist = Math.hypot(dx, dy);
-      const duration = (performance.now() - startTime) / 1000;
+      const seconds = (performance.now() - s.t) / 1000;
+      if (dist < 60 || seconds < 0.15 || this.isBusy) return;
 
-      // Only trigger if a deliberate drag occurred
-      if (dist < 40 || duration < 0.15) return;
+      const speed = dist / seconds;
+      const endY = (e.clientY - rect.top) / planeH;
+      let instruction;
+      if (speed > 900) instruction = 'higher tempo, much more energetic and busier rhythms';
+      else if (speed < 220) instruction = 'sparser, slower, dreamy and more ambient';
+      else if (endY > 0.66) instruction = 'heavier bass, punchier low end kick, deeper mood';
+      else if (endY < 0.34) instruction = 'brighter melody, sparkling textures, lighter drums';
+      else instruction = dx > 0 ? 'more driving forward motion and syncopation' : 'warmer, vintage tone and laid back groove';
 
-      const speed = dist / duration;
-      const endYRatio = e.clientY / window.innerHeight;
-
-      let instruction = '';
-      if (speed > 450) {
-        instruction = 'higher tempo, much more energetic and busier rhythms';
-      } else if (speed < 150) {
-        instruction = 'sparser, slower, dreamy and more ambient';
-      } else if (endYRatio > 0.65) {
-        instruction = 'heavier bass, punchier low end kick, deeper mood';
-      } else if (endYRatio < 0.35) {
-        instruction = 'brighter melody, sparkling textures, lighter drums';
-      } else {
-        instruction = dx > 0 ? 'more driving forward motion and syncopation' : 'warmer, vintage tone and laid back groove';
-      }
-
-      this.showToast(`Canvas gesture: "${instruction}"`);
       this.handleRefine(instruction);
     });
   }
 }
 
-// Initialize on DOM load
 window.addEventListener('DOMContentLoaded', () => {
   window.chromajam = new ChromajamApp();
 });

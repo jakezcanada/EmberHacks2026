@@ -3,72 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Chromajam - An accessible AI jam partner you can see. Powered by Google Gemini, Tone.js, and real-time canvas visualizers for deaf, hard-of-hearing, and hearing creators." />
-    <title>Chromajam | Accessible Visual Jam Partner</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <meta name="description" content="Chromajam is a jam partner you can see. Give it half a song and Gemini writes the other half, then every instrument is painted as its own shape, color and line so the music can be read without sound." />
+    <meta name="theme-color" content="#f6f7f5" />
+    <title>Chromajam · A jam partner you can see</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f6f7f5'/%3E%3Ccircle cx='8.5' cy='20' r='5.5' fill='%23141414'/%3E%3Crect x='15' y='15' width='10' height='10' fill='none' stroke='%23141414' stroke-width='2'/%3E%3Cpath d='M16 4l6.5 9h-13z' fill='%23141414'/%3E%3C/svg%3E" />
+    <link rel="preload" href="/fonts/jost-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/martian-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="app" class="app-layout">
-      <!-- Top Header -->
-      <header class="app-header" role="banner">
-        <div class="brand-group">
-          <div class="logo-mark" aria-hidden="true">
-            <span class="dot dot-1"></span>
-            <span class="dot dot-2"></span>
-            <span class="dot dot-3"></span>
-          </div>
-          <div class="brand-text">
-            <h1 class="brand-title">Chromajam</h1>
-            <p class="brand-tagline">A jam partner you can see</p>
-          </div>
+    <a class="skip-link" href="#prompt-input">Skip to the prompt</a>
+    <div class="app">
+      <header class="masthead">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 44 20" aria-hidden="true">
+            <circle cx="8" cy="11" r="7" fill="#141414" />
+            <rect x="17.75" y="4.75" width="11.5" height="11.5" fill="none" stroke="#141414" stroke-width="1.5" />
+            <path d="M37 2.5l6.5 14h-13z" fill="#141414" />
+          </svg>
+          <h1 class="wordmark">Chromajam</h1>
+          <p class="tagline">A jam partner you can see</p>
         </div>
-
-        <div class="header-badges">
-          <span id="connection-status" class="status-indicator online">
-            <span class="status-dot"></span>
-            <span id="status-label">Ready</span>
-          </span>
-          <div class="header-actions">
-            <button id="header-preset-lofi" class="badge-chip" title="Load Lo-Fi preset">Lo-Fi</button>
-            <button id="header-preset-synth" class="badge-chip" title="Load Synthwave preset">Synthwave</button>
-            <button id="header-preset-trap" class="badge-chip" title="Load Trap preset">Trap</button>
-            <button id="header-preset-ambient" class="badge-chip" title="Load Ambient preset">Ambient</button>
-          </div>
+        <div class="masthead-center">
+          <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+        </div>
+        <div class="masthead-tools">
+          <p id="source-state" class="source-state" data-state="example">
+            <span class="state-mark" aria-hidden="true"></span>
+            <span class="source-text"><span id="source-label">Example preset</span> <span id="source-detail" class="source-detail">Gemini not called</span></span>
+          </p>
+          <button id="calm-btn" class="tool-btn" type="button" aria-pressed="false">Calm<span class="long-label"> mode</span></button>
+          <button id="access-btn" class="tool-btn" type="button">Access</button>
         </div>
       </header>
 
-      <!-- Main Stage: Canvas Hero -->
-      <main class="stage-container" role="main">
-        <div class="canvas-wrapper">
-          <canvas id="visual-canvas" aria-label="Visual music performance canvas" role="img"></canvas>
+      <main class="stage">
+        <section class="plane" aria-label="Visual score">
+          <canvas id="visual-canvas" role="img" aria-label="Chromajam visual score"></canvas>
+        </section>
 
-          <!-- Friendly Loading Overlay -->
-          <div id="loading-overlay" class="loading-overlay" aria-hidden="true" style="display: none;">
-            <div class="loading-pulse-ring"></div>
-            <p id="loading-message" class="loading-message">Gemini is listening and composing...</p>
+        <aside class="sheet" aria-label="Song sheet">
+          <div class="sheet-tabs" role="tablist" aria-label="Sheet views">
+            <button role="tab" id="tab-song" aria-controls="panel-song" aria-selected="true" type="button">Song</button>
+            <button role="tab" id="tab-io" aria-controls="panel-io" aria-selected="false" tabindex="-1" type="button" aria-keyshortcuts="D">Gemini I/O <kbd>D</kbd></button>
+            <button role="tab" id="tab-access" aria-controls="panel-access" aria-selected="false" tabindex="-1" type="button">Access</button>
           </div>
-
-          <!-- Notification Toast -->
-          <div id="toast-message" class="toast-message" role="alert" aria-live="polite" style="display: none;"></div>
-
-          <!-- Paint-back Gesture Hint (Stretch Phase 6) -->
-          <div class="canvas-overlay-hint" id="canvas-hint" aria-hidden="true">
-            <span>Click & drag across canvas to guide the vibe</span>
-          </div>
-        </div>
+          <div id="panel-song" class="sheet-panel" role="tabpanel" aria-labelledby="tab-song" tabindex="0"></div>
+          <div id="panel-io" class="sheet-panel" role="tabpanel" aria-labelledby="tab-io" tabindex="0" hidden></div>
+          <div id="panel-access" class="sheet-panel" role="tabpanel" aria-labelledby="tab-access" tabindex="0" hidden></div>
+        </aside>
       </main>
 
-      <!-- Bottom Controls Bar -->
-      <nav id="controls-container" class="controls-container" aria-label="Audio and Generation controls"></nav>
-
-      <!-- Side Drawer: Settings & Accessibility -->
-      <aside id="settings-drawer" class="drawer drawer-left" aria-hidden="true" role="dialog" aria-modal="true"></aside>
-
-      <!-- Side Drawer: Gemini Debugger Panel -->
-      <aside id="debug-drawer" class="drawer drawer-right" aria-hidden="true" role="dialog" aria-modal="true"></aside>
+      <section id="composer" class="composer" aria-label="Compose and play"></section>
     </div>
 
     <script type="module" src="/src/main.js"></script>

@@ -12,10 +12,10 @@ class SafetyManager {
     // Detect system preference
     if (typeof window !== 'undefined' && window.matchMedia) {
       const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-      if (prefersReduced.matches) {
-        this.calmMode = true;
-      }
+      this.systemPrefersReduced = prefersReduced.matches;
+      this.calmMode = prefersReduced.matches;
       prefersReduced.addEventListener('change', (e) => {
+        this.systemPrefersReduced = e.matches;
         if (!this.userOverrodeCalmMode) {
           this.calmMode = e.matches;
         }
@@ -31,8 +31,9 @@ class SafetyManager {
   }
 
   evaluateSongRecommendation(calmModeRecommended) {
-    if (!this.userOverrodeCalmMode && calmModeRecommended) {
-      this.calmMode = true;
+    // Follow each song's recommendation (and the system setting) until the user picks for themselves
+    if (!this.userOverrodeCalmMode) {
+      this.calmMode = Boolean(calmModeRecommended) || Boolean(this.systemPrefersReduced);
     }
   }
 

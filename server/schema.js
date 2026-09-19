@@ -6,6 +6,16 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Instrument catalog shared with the client engine
+const catalog = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../src/music/sound-catalog.json'), 'utf-8'));
+export const SOUND_OPTIONS = {
+  drum_kit: Object.keys(catalog.drum_kit),
+  lead: Object.keys(catalog.lead),
+  bass: Object.keys(catalog.bass),
+  pad: Object.keys(catalog.pad),
+};
+export const SOUND_CATALOG = catalog;
+
 // Load fallback presets
 const presetsPath = path.resolve(__dirname, '../src/fallback/presets.json');
 let fallbackPresets = [];
@@ -18,7 +28,7 @@ try {
 export const VALID_TEXTURES = ['watercolor', 'ink', 'neon', 'grain', 'glass'];
 export const VALID_MOTIONS = ['drift', 'pulse', 'swell', 'scatter', 'ripple'];
 export const VALID_PROVIDERS = ['drums', 'melody', 'both', 'none', 'prompt'];
-export const VALID_SHAPES = ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'];
+export const VALID_SHAPES = ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond', 'hexagon'];
 
 export const DEFAULT_INSTRUMENT_COLORS = {
   kick: '#e07a5f',
@@ -28,6 +38,7 @@ export const DEFAULT_INSTRUMENT_COLORS = {
   bass: '#6d597a',
   clap: '#b56576',
   perc: '#eaac8b',
+  chords: '#9c89b8',
 };
 
 export const DEFAULT_INSTRUMENT_SHAPES = {
@@ -38,12 +49,21 @@ export const DEFAULT_INSTRUMENT_SHAPES = {
   bass: 'blob',
   clap: 'star',
   perc: 'diamond',
+  chords: 'hexagon',
 };
 
 export const DEFAULT_PALETTE = ['#1b2a49', '#e07a5f', '#f2cc8f', '#81b29a', '#3d5a80'];
 
 const hexColorRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
-const pitchRegex = /^[A-G][#b]?[1-6]$/;
+const pitchRegex = /^[A-G][#b]?[0-7]$/;
+
+/** "bb4" / "BB4" / "a#3" -> "Bb4" / "A#3"; null when it is not a note name. */
+function normalizePitch(raw) {
+  const m = /^([a-gA-G])([#bB]?)(-?\d)$/.exec(String(raw || '').trim());
+  if (!m) return null;
+  const pitch = m[1].toUpperCase() + (m[2] === '#' ? '#' : m[2] ? 'b' : '') + m[3];
+  return pitchRegex.test(pitch) ? pitch : null;
+}
 
 // Zod Schema
 export const NoteSchema = z.object({
@@ -67,6 +87,15 @@ export const ChromajamSchema = z.object({
   groove: z.object({
     swing: z.number().default(0),
     humanize: z.number().default(0.2),
+    variation: z.number().default(0.35),
+  }),
+  sound: z.object({
+    drum_kit: z.string(),
+    lead: z.string(),
+    bass: z.string(),
+    pad: z.string(),
+    reverb: z.number(),
+    delay: z.number(),
   }),
   drums: z.object({
     bars: z.number(),
@@ -78,6 +107,12 @@ export const ChromajamSchema = z.object({
   }),
   melody: z.array(NoteSchema).default([]),
   bass: z.array(NoteSchema).default([]),
+  chords: z.array(z.object({
+    pitches: z.array(z.string()),
+    start: z.number(),
+    dur: z.number(),
+    vel: z.number().default(0.6),
+  })).default([]),
   visual: z.object({
     palette: z.array(z.string()),
     texture: z.string(),
@@ -89,15 +124,17 @@ export const ChromajamSchema = z.object({
   director_note: z.string().default(''),
 });
 
-export function getFallbackPreset(hint = 'prompt') {
-  let matched = null;
-  if (hint === 'melody') {
-    matched = fallbackPresets.find(p => p.analysis.provided === 'melody');
-  } else if (hint === 'drums') {
-    matched = fallbackPresets.find(p => p.analysis.provided === 'drums');
-  } else {
-    matched = fallbackPresets.find(p => p.analysis.provided === 'prompt') || fallbackPresets[0];
-  }
+/**
+ * Pick a preset that fits the input. Text prompts can take any full song, and
+ * the preset already playing is skipped so a fallback never repeats the same beat.
+ */
+export function getFallbackPreset(hint = 'prompt', avoidId = null) {
+  const matching = fallbackPresets.filter((p) => p.analysis.provided === hint);
+  let pool = hint === 'melody' || hint === 'drums' ? matching : fallbackPresets;
+  if (!pool.length) pool = fallbackPresets;
+  const fresh = pool.filter((p) => p.id !== avoidId);
+  const choices = fresh.length ? fresh : pool;
+  const matched = choices[Math.floor(Math.random() * choices.length)];
   const result = JSON.parse(JSON.stringify(matched || fallbackPresets[0]));
   result.fallback = true;
   return result;
@@ -141,6 +178,20 @@ export function repairAndValidate(data, hint = 'prompt') {
     repaired.groove = repaired.groove || {};
     repaired.groove.swing = Math.max(0, Math.min(1, Number(repaired.groove.swing) || 0));
     repaired.groove.humanize = Math.max(0, Math.min(1, Number(repaired.groove.humanize) || 0.2));
+    const variation = Number(repaired.groove.variation);
+    repaired.groove.variation = Math.max(0, Math.min(1, isNaN(variation) ? 0.35 : variation));
+
+    // 2b. Sound: every choice must exist in the catalog
+    const sound = repaired.sound || {};
+    const pickSound = (group, value, fallback) => (SOUND_OPTIONS[group].includes(value) ? value : fallback);
+    repaired.sound = {
+      drum_kit: pickSound('drum_kit', String(sound.drum_kit || ''), 'tight'),
+      lead: pickSound('lead', String(sound.lead || ''), 'piano'),
+      bass: pickSound('bass', String(sound.bass || ''), 'synth'),
+      pad: pickSound('pad', String(sound.pad || ''), 'none'),
+      reverb: Math.max(0, Math.min(1, Number(sound.reverb) || 0.25)),
+      delay: Math.max(0, Math.min(1, Number(sound.delay) || 0.1)),
+    };
 
     // 3. Drums repair
     repaired.drums = repaired.drums || {};
@@ -169,8 +220,8 @@ export function repairAndValidate(data, hint = 'prompt') {
       const validNotes = [];
       for (const note of notesArray) {
         if (!note || typeof note !== 'object') continue;
-        let pitch = String(note.pitch || '').trim().toUpperCase();
-        if (!pitchRegex.test(pitch)) continue;
+        const pitch = normalizePitch(note.pitch);
+        if (!pitch) continue;
 
         let start = Number(note.start);
         if (isNaN(start) || start < 0 || start >= maxBeats) continue;
@@ -191,6 +242,20 @@ export function repairAndValidate(data, hint = 'prompt') {
 
     repaired.melody = sanitizeNotes(repaired.melody);
     repaired.bass = sanitizeNotes(repaired.bass);
+
+    repaired.chords = (Array.isArray(repaired.chords) ? repaired.chords : [])
+      .map((c) => {
+        const pitches = (Array.isArray(c?.pitches) ? c.pitches : []).map(normalizePitch).filter(Boolean).slice(0, 6);
+        const start = Number(c?.start);
+        let dur = Number(c?.dur);
+        if (!pitches.length || isNaN(start) || start < 0 || start >= maxBeats) return null;
+        if (isNaN(dur) || dur <= 0) dur = 1;
+        dur = Math.min(dur, maxBeats - start);
+        const vel = Math.max(0.1, Math.min(1, Number(c?.vel) || 0.6));
+        return { pitches, start, dur, vel };
+      })
+      .filter(Boolean);
+    if (repaired.sound.pad === 'none') repaired.chords = [];
 
     // 5. Visual repair
     repaired.visual = repaired.visual || {};
@@ -282,8 +347,22 @@ export const geminiResponseSchema = {
       properties: {
         swing: { type: 'NUMBER', description: 'Swing ratio 0.0 to 1.0' },
         humanize: { type: 'NUMBER', description: 'Humanization jitter 0.0 to 1.0' },
+        variation: { type: 'NUMBER', description: 'How much each repeat of the loop improvises on the written part, 0.0 (strict) to 1.0 (loose)' },
       },
-      required: ['swing', 'humanize'],
+      required: ['swing', 'humanize', 'variation'],
+    },
+    sound: {
+      type: 'OBJECT',
+      description: 'Instruments chosen for this genre',
+      properties: {
+        drum_kit: { type: 'STRING', enum: SOUND_OPTIONS.drum_kit },
+        lead: { type: 'STRING', enum: SOUND_OPTIONS.lead, description: 'Instrument that plays the melody' },
+        bass: { type: 'STRING', enum: SOUND_OPTIONS.bass },
+        pad: { type: 'STRING', enum: SOUND_OPTIONS.pad, description: 'Instrument that plays the chords, or none' },
+        reverb: { type: 'NUMBER', description: 'Room size 0.0 (dry) to 1.0 (huge)' },
+        delay: { type: 'NUMBER', description: 'Echo amount 0.0 to 1.0' },
+      },
+      required: ['drum_kit', 'lead', 'bass', 'pad', 'reverb', 'delay'],
     },
     drums: {
       type: 'OBJECT',
@@ -323,6 +402,20 @@ export const geminiResponseSchema = {
         required: ['pitch', 'start', 'dur', 'vel'],
       },
     },
+    chords: {
+      type: 'ARRAY',
+      description: 'Chord progression for the pad instrument; empty when pad is none',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          pitches: { type: 'ARRAY', items: { type: 'STRING' }, description: '2 to 5 note names voiced around octave 3-4, like ["D3","F3","A3","C4"]' },
+          start: { type: 'NUMBER', description: 'Start beat within the loop' },
+          dur: { type: 'NUMBER', description: 'Duration in beats' },
+          vel: { type: 'NUMBER', description: 'Velocity 0.0 to 1.0' },
+        },
+        required: ['pitches', 'start', 'dur', 'vel'],
+      },
+    },
     visual: {
       type: 'OBJECT',
       properties: {
@@ -351,21 +444,23 @@ export const geminiResponseSchema = {
             bass: { type: 'STRING' },
             clap: { type: 'STRING' },
             perc: { type: 'STRING' },
+            chords: { type: 'STRING' },
           },
-          required: ['kick', 'snare', 'hat', 'melody', 'bass', 'clap', 'perc'],
+          required: ['kick', 'snare', 'hat', 'melody', 'bass', 'clap', 'perc', 'chords'],
         },
         instrument_shapes: {
           type: 'OBJECT',
           properties: {
-            kick: { type: 'STRING', enum: ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'] },
-            snare: { type: 'STRING', enum: ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'] },
-            hat: { type: 'STRING', enum: ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'] },
-            melody: { type: 'STRING', enum: ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'] },
-            bass: { type: 'STRING', enum: ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'] },
-            clap: { type: 'STRING', enum: ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'] },
-            perc: { type: 'STRING', enum: ['circle', 'square', 'triangle', 'line', 'blob', 'star', 'diamond'] },
+            kick: { type: 'STRING', enum: VALID_SHAPES },
+            snare: { type: 'STRING', enum: VALID_SHAPES },
+            hat: { type: 'STRING', enum: VALID_SHAPES },
+            melody: { type: 'STRING', enum: VALID_SHAPES },
+            bass: { type: 'STRING', enum: VALID_SHAPES },
+            clap: { type: 'STRING', enum: VALID_SHAPES },
+            perc: { type: 'STRING', enum: VALID_SHAPES },
+            chords: { type: 'STRING', enum: VALID_SHAPES },
           },
-          required: ['kick', 'snare', 'hat', 'melody', 'bass', 'clap', 'perc'],
+          required: ['kick', 'snare', 'hat', 'melody', 'bass', 'clap', 'perc', 'chords'],
         },
         calm_mode_recommended: { type: 'BOOLEAN' },
       },
@@ -376,5 +471,5 @@ export const geminiResponseSchema = {
       description: 'One or two sentences describing what was generated and why',
     },
   },
-  required: ['analysis', 'groove', 'drums', 'melody', 'bass', 'visual', 'director_note'],
+  required: ['analysis', 'groove', 'sound', 'drums', 'melody', 'bass', 'chords', 'visual', 'director_note'],
 };
