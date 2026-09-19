@@ -151,7 +151,7 @@ export function repairAndValidate(data, hint = 'prompt') {
     // 1. Analysis repair
     repaired.analysis = repaired.analysis || {};
     let tempo = Math.round(Number(repaired.analysis.tempo) || 100);
-    repaired.analysis.tempo = Math.max(60, Math.min(180, tempo));
+    repaired.analysis.tempo = Math.max(60, Math.min(300, tempo));
     repaired.analysis.key = String(repaired.analysis.key || 'C major');
     repaired.analysis.time_signature = '4/4';
     repaired.analysis.mood = Array.isArray(repaired.analysis.mood) && repaired.analysis.mood.length > 0
@@ -315,7 +315,7 @@ export const geminiResponseSchema = {
     analysis: {
       type: 'OBJECT',
       properties: {
-        tempo: { type: 'INTEGER', description: 'Tempo in BPM between 60 and 180' },
+        tempo: { type: 'INTEGER', description: 'Tempo in BPM between 60 and 300' },
         key: { type: 'STRING', description: 'Musical key e.g. D minor, C major' },
         time_signature: { type: 'STRING', description: 'Time signature, usually 4/4' },
         mood: {

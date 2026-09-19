@@ -100,6 +100,17 @@ npm run dev
 
 Open the URL printed in the terminal (usually `http://localhost:5173`) and allow microphone access.
 
+### Windows: one-click start
+
+Double-click `start.cmd`, or run it from cmd:
+
+```bat
+start.cmd        :: dev mode with hot reload, opens http://localhost:5173
+start.cmd prod   :: production build served on http://localhost:3001
+```
+
+It checks for Node 20+, installs packages on first run, creates `.env` from `.env.example` if missing, and opens the browser when the app is ready. If Chromajam is already running it just opens the browser. Press Ctrl+C in the window to stop.
+
 ### Scripts
 
 | Command | What it does |

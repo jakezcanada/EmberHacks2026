@@ -93,7 +93,8 @@ class MusicEngine {
     setTimeout(() => Object.values(old).forEach((v) => v?.dispose()), 2500);
 
     this.emit('loading', { loading: true, sound });
-    this.voicesReady = Tone.loaded()
+    const loadTimeout = new Promise((resolve) => setTimeout(resolve, 5000));
+    this.voicesReady = Promise.race([Tone.loaded(), loadTimeout])
       .catch((err) => console.warn('Some samples failed to load:', err))
       .finally(() => this.emit('loading', { loading: false, sound }));
     return this.voicesReady;
@@ -118,7 +119,7 @@ class MusicEngine {
 
   async loadSong(songData) {
     this.currentData = songData;
-    this.bpm = songData.analysis?.tempo || 90;
+    this.bpm = Math.max(60, Math.min(300, songData.analysis?.tempo || 90));
     this.bars = songData.drums?.bars || 2;
     Tone.getTransport().bpm.value = this.bpm;
 
@@ -129,7 +130,7 @@ class MusicEngine {
   }
 
   setBpm(bpm) {
-    this.bpm = Math.max(60, Math.min(180, bpm));
+    this.bpm = Math.max(60, Math.min(300, bpm));
     Tone.getTransport().bpm.value = this.bpm;
     if (this.currentData?.analysis) this.currentData.analysis.tempo = this.bpm;
   }
@@ -293,6 +294,38 @@ class MusicEngine {
 
   getAnalyserData() {
     return this.mix ? this.mix.analyser.getValue() : new Float32Array(64);
+  }
+
+  async recordLoop() {
+    await this.init();
+    const rawContext = Tone.getContext().rawContext;
+    if (!window.MediaRecorder) throw new Error('This browser cannot record audio');
+    const destination = rawContext.createMediaStreamDestination();
+    this.mix.master.connect(destination);
+    const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg']
+      .find((type) => MediaRecorder.isTypeSupported(type));
+    const recorder = new MediaRecorder(destination.stream, mimeType ? { mimeType } : undefined);
+    const chunks = [];
+    const recording = new Promise((resolve) => {
+      recorder.addEventListener('dataavailable', (event) => {
+        if (event.data.size > 0) chunks.push(event.data);
+      });
+      recorder.addEventListener('stop', () => {
+        setTimeout(() => resolve(new Blob(chunks, { type: recorder.mimeType })), 0);
+      });
+    });
+    const duration = (this.bars * 4 * 60) / this.bpm;
+    const wasPlaying = this.isPlaying;
+    try {
+      recorder.start();
+      if (!wasPlaying) await this.play();
+      await new Promise((resolve) => setTimeout(resolve, duration * 1000 + 250));
+      recorder.stop();
+      return await recording;
+    } finally {
+      this.mix.master.disconnect(destination);
+      if (!wasPlaying && this.isPlaying) this.stop();
+    }
   }
 }
 
