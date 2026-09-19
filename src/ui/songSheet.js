@@ -20,14 +20,15 @@ export function glyphSvg(shape, color, { size = 22, silent = false } = {}) {
  * instrument legend (shape + color + name) that keys the painting and score.
  */
 export class SongSheet {
-  constructor(container, { onRefine }) {
+  constructor(container, { onRefine, onAudioChange }) {
     this.container = container;
     this.onRefine = onRefine;
+    this.onAudioChange = onAudioChange;
     this.rows = {};
     this.timers = {};
   }
 
-  render(song, { colors, shapes, isExample = false, isFallback = false } = {}) {
+  render(song, { colors, shapes, volumes = {}, fluctuations = true, isExample = false, isFallback = false } = {}) {
     if (!song) return;
     const a = song.analysis || {};
     const counts = laneActivity(song);
@@ -56,7 +57,7 @@ export class SongSheet {
         ${song.director_note ? `<p class="director-note">${escapeHtml(song.director_note)}</p>` : ''}
         <div class="refine">
           <button type="button" class="btn" data-refine="same vibe, more energy">${icons.energy}<span>More energy</span></button>
-          <button type="button" class="btn" data-refine="create another take with different variations and fills">${icons.retake}<span>Another take</span></button>
+          <button type="button" class="btn" data-refine="same vibe, less energy">${icons.energy}<span>Less energy</span></button>
         </div>
         <p class="hint refine-hint">Or drag across the painting: fast for more energy, slow for sparser, low for heavier bass, high for a brighter melody.</p>
 
@@ -89,6 +90,22 @@ export class SongSheet {
           }).join('')}
         </ul>
 
+        <h3 class="sheet-heading">Playback variation</h3>
+        <div class="sheet-switch-row">
+          <button type="button" role="switch" id="sheet-fluctuations-toggle" class="switch" aria-checked="${fluctuations}" aria-label="Toggle note fluctuations"><span aria-hidden="true"></span></button>
+          <span>Note fluctuations</span>
+        </div>
+        <p class="hint">Passing notes, octave jumps, ornaments and ghost hits are added only when this is on.</p>
+
+        <h3 class="sheet-heading">Instrument levels</h3>
+        <div class="mix-controls">
+          ${LANES.map((lane) => `
+            <label class="mix-row">
+              <span>${lane.label}</span>
+              <input type="range" data-mix-instrument="${lane.id}" min="0" max="1" step="0.01" value="${volumes[lane.id] ?? 1}" aria-label="${lane.label} volume" />
+            </label>`).join('')}
+        </div>
+
       </div>
     `;
 
@@ -96,6 +113,24 @@ export class SongSheet {
     this.container.querySelectorAll('.legend-row').forEach((row) => (this.rows[row.dataset.lane] = row));
     this.container.querySelectorAll('[data-refine]').forEach((b) => {
       b.addEventListener('click', () => this.onRefine(b.dataset.refine));
+    });
+    this.container.querySelectorAll('[data-mix-instrument]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const volumes = {};
+        this.container.querySelectorAll('[data-mix-instrument]').forEach((control) => {
+          volumes[control.dataset.mixInstrument] = Number(control.value);
+        });
+        this.onAudioChange?.({ volumes });
+      });
+    });
+    this.container.querySelector('#sheet-fluctuations-toggle')?.addEventListener('click', (event) => {
+      const enabled = event.currentTarget.getAttribute('aria-checked') !== 'true';
+      event.currentTarget.setAttribute('aria-checked', String(enabled));
+      const volumes = {};
+      this.container.querySelectorAll('[data-mix-instrument]').forEach((control) => {
+        volumes[control.dataset.mixInstrument] = Number(control.value);
+      });
+      this.onAudioChange?.({ fluctuations: enabled, volumes });
     });
   }
 

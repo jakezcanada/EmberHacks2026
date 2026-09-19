@@ -37,7 +37,7 @@ export class DebugPanel {
 
         ${isExample ? `
         <h3 class="sheet-heading">What Gemini heard</h3>
-        <p class="hint">Nothing was sent. Type a vibe, hum or tap, then press Generate to see exactly what goes to Gemini.</p>
+        <p class="hint">Nothing was sent. Type a vibe, tap a rhythm, or upload a clip, then press Generate to see exactly what goes to Gemini.</p>
         ` : `
         <h3 class="sheet-heading">What Gemini heard</h3>
         <dl class="kv">

@@ -1,7 +1,7 @@
 import { icons } from './icons.js';
 
 /**
- * The composer bar: what you give Gemini (prompt, hum, taps, upload), the one
+ * The composer bar: what you give Gemini (prompt, taps, upload), the one
  * Generate action, then transport, examples and audio exports.
  */
 export class ControlsBar {
@@ -30,16 +30,7 @@ export class ControlsBar {
     this.$('#bpm-val').innerHTML = `${bpm}<span>BPM</span>`;
   }
 
-  setRecordingState(isRecording, elapsed = 0, max = 15) {
-    const btn = this.$('#record-btn');
-    btn.classList.toggle('is-live', isRecording);
-    btn.setAttribute('aria-pressed', String(isRecording));
-    btn.innerHTML = isRecording
-      ? `${icons.stop}<span>Stop <span class="mono">${Math.max(0, Math.ceil(max - elapsed))} s</span></span>`
-      : `${icons.record}<span>Hum</span>`;
-  }
-
-  /** Shows what will be sent alongside the prompt (a hummed melody, taps, a file). */
+  /** Shows what will be sent alongside the prompt (taps or an uploaded file). */
   setCaptured(text) {
     const chip = this.$('#captured');
     if (!text) {
@@ -82,7 +73,6 @@ export class ControlsBar {
             </span>
           </div>
           <div class="input-tools" role="group" aria-label="Or give it half a song">
-            <button type="button" id="record-btn" class="btn" aria-pressed="false">${icons.record}<span>Hum</span></button>
             <button type="button" id="tap-btn" class="btn" aria-keyshortcuts="T">${icons.tap}<span>Tap</span></button>
             <button type="button" id="upload-btn" class="btn">${icons.upload}<span>Upload</span></button>
             <input type="file" id="audio-file-input" class="visually-hidden" accept="audio/*" tabindex="-1" aria-hidden="true" />
@@ -118,7 +108,6 @@ export class ControlsBar {
       if (e.key === 'Enter' && !this.$('#generate-btn').disabled) this.cb.onGenerate(prompt.value.trim());
     });
     this.$('#generate-btn').addEventListener('click', () => this.cb.onGenerate(prompt.value.trim()));
-    this.$('#record-btn').addEventListener('click', () => this.cb.onToggleRecord());
     this.$('#tap-btn').addEventListener('click', () => this.cb.onTap());
 
     const fileInput = this.$('#audio-file-input');

@@ -1,7 +1,7 @@
 import * as Tone from 'tone';
 
 const NOTE_INDEX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-export const MAX_PITCH_SHIFT_SEMITONES = 24;
+export const MAX_PITCH_SHIFT_SEMITONES = 36;
 
 /** Convert a conventional note name such as C#4 or Db3 to MIDI. */
 export function noteToMidi(note) {
@@ -54,7 +54,7 @@ export function pitchedSampler(spec, { baseUrl, extension = 'mp3', ...options } 
       const shifter = new Tone.PitchShift({ pitch: semitones, windowSize: 0.1, delayTime: 0.03 });
       player.connect(shifter);
       if (destination) shifter.connect(destination);
-      cache.set(key, { player, shifter });
+      cache.set(key, { player, shifter, active: false, disposed: false });
     }
     return cache.get(key);
   }
@@ -70,9 +70,15 @@ export function pitchedSampler(spec, { baseUrl, extension = 'mp3', ...options } 
     },
     triggerAttackRelease(note, _duration, time, velocity) {
       try {
-        const { player } = getVoice(note);
+        const voice = getVoice(note);
+        const start = () => {
+          if (voice.disposed) return;
+          voice.player.start(Math.max(time, Tone.now()), 0, undefined, velocity);
+          voice.active = true;
+        };
         // Let a one-shot finish naturally; never change its duration via playbackRate.
-        player.start(time, 0, undefined, velocity);
+        if (voice.player.loaded) start();
+        else void Tone.loaded().then(start).catch((error) => console.warn(`[PitchShift] ${error.message}`));
       } catch (error) {
         console.warn(`[PitchShift] ${error.message}`);
       }
@@ -83,12 +89,24 @@ export function pitchedSampler(spec, { baseUrl, extension = 'mp3', ...options } 
       return this;
     },
     releaseAll(time) {
-      for (const { player } of cache.values()) player.stop(time);
+      for (const voice of cache.values()) {
+        if (!voice.active) continue;
+        try {
+          voice.player.stop(time);
+        } catch (error) {
+          console.warn(`[PitchShift] Could not stop sample: ${error.message}`);
+        }
+        voice.active = false;
+      }
     },
     dispose() {
-      for (const { player, shifter } of cache.values()) {
-        player.dispose();
-        shifter.dispose();
+      for (const voice of cache.values()) {
+        voice.disposed = true;
+        if (voice.active) {
+          try { voice.player.stop(); } catch {}
+        }
+        try { voice.player.dispose(); } catch (error) { console.warn(`[PitchShift] Could not dispose sample: ${error.message}`); }
+        try { voice.shifter.dispose(); } catch {}
       }
       cache.clear();
     },

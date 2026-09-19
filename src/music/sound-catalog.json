@@ -62,7 +62,7 @@
     "brass": { "label": "Brass stabs", "sampled": "french-horn", "use": "cinematic, funk stabs, epic" }
   },
   "samples": {
-    "piano": { "base": "https://tonejs.github.io/audio/salamander/", "root": "C4", "extension": "mp3", "maxPitchShiftSemitones": 24, "notes": ["C4"] },
+    "piano": { "base": "https://tonejs.github.io/audio/salamander/", "root": "C4", "extension": "mp3", "maxPitchShiftSemitones": 36, "notes": ["C4"] },
     "bass-electric": { "root": "E2", "notes": ["E2"] },
     "contrabass": { "root": "E2", "notes": ["E2"] },
     "guitar-acoustic": { "root": "G3", "notes": ["G3"] },

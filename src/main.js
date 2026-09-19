@@ -2,7 +2,6 @@ import { generateJamRequest, refineJamRequest } from './api/client.js';
 import { musicEngine } from './music/engine.js';
 import { exportMidiFile } from './music/midi.js';
 import { exportMp3File } from './music/mp3.js';
-import { AudioRecorder } from './input/record.js';
 import { processAudioToWav } from './input/wav.js';
 import { extractNotesFromAudio } from './input/pitch.js';
 import { TapTracker } from './input/taps.js';
@@ -15,7 +14,6 @@ import { DebugPanel } from './ui/debugPanel.js';
 import { SongSheet } from './ui/songSheet.js';
 import fallbackPresets from './fallback/presets.json';
 
-const MAX_AUDIO_SECONDS = 15;
 const EXAMPLE_LABELS = ['Lo-fi', 'Synthwave', 'Trap', 'Ambient'];
 const INTERACTIVE = 'button, input, select, textarea, a, summary, [role="switch"], [role="tab"], [contenteditable="true"]';
 
@@ -29,7 +27,6 @@ class ChromajamApp {
     this.tapTimes = [];
     this.isBusy = false;
     this.engine = musicEngine; // handy for debugging from the console (window.chromajam.engine)
-    this.recorder = new AudioRecorder(MAX_AUDIO_SECONDS);
     this.tapTracker = new TapTracker();
 
     this.canvas = document.getElementById('visual-canvas');
@@ -41,18 +38,32 @@ class ChromajamApp {
       io: document.getElementById('panel-io'),
       access: document.getElementById('panel-access'),
     };
-    this.songSheet = new SongSheet(this.panels.song, { onRefine: (i) => this.handleRefine(i) });
+    this.songSheet = new SongSheet(this.panels.song, {
+      onRefine: (i) => this.handleRefine(i),
+      onAudioChange: ({ volumes, fluctuations }) => {
+        if (volumes) this.settings.customizations.instrumentVolumes = volumes;
+        if (typeof fluctuations === 'boolean') this.settings.customizations.fluctuations = fluctuations;
+        this.settings.save();
+        musicEngine.setInstrumentVolumes(this.settings.customizations.instrumentVolumes);
+        if (typeof fluctuations === 'boolean') musicEngine.setFluctuationsEnabled(fluctuations);
+      },
+    });
     this.debugPanel = new DebugPanel(this.panels.io);
     this.settings = new SettingsManager({
       onVisualChange: () => this.refreshVisual(),
       onCalmChange: (on) => this.syncCalmButton(on),
+      onAudioChange: ({ fluctuations, volumes }) => {
+        musicEngine.setFluctuationsEnabled(fluctuations);
+        musicEngine.setInstrumentVolumes(volumes);
+      },
     });
+    musicEngine.setFluctuationsEnabled(this.settings.customizations.fluctuations !== false);
+    musicEngine.setInstrumentVolumes(this.settings.customizations.instrumentVolumes);
 
     this.controls = new ControlsBar(
       document.getElementById('composer'),
       {
         onGenerate: (prompt) => this.handleGenerate(prompt),
-        onToggleRecord: () => this.handleToggleRecord(),
         onFileUpload: (file) => this.handleFileUpload(file),
         onTap: () => this.handleTap(),
         onClearCapture: () => this.clearCapture(),
@@ -106,6 +117,8 @@ class ChromajamApp {
     this.songSheet.render(this.currentSong, {
       colors: visual.instrument_colors,
       shapes: visual.instrument_shapes,
+      volumes: this.settings.customizations.instrumentVolumes,
+      fluctuations: this.settings.customizations.fluctuations !== false,
       isExample: this.currentSource === 'example',
       isFallback: this.currentFallback,
     });
@@ -308,24 +321,6 @@ class ChromajamApp {
     this.controls.setCaptured(null);
   }
 
-  async handleToggleRecord() {
-    if (this.recorder.isRecording) {
-      this.recorder.stop();
-      return;
-    }
-    try {
-      this.controls.setRecordingState(true, 0, MAX_AUDIO_SECONDS);
-      this.showToast('Listening · hum, then press Stop');
-      const blob = await this.recorder.start((elapsed, max) => this.controls.setRecordingState(true, elapsed, max));
-      this.controls.setRecordingState(false);
-      await this.ingestAudio(blob, 'Melody');
-    } catch (err) {
-      this.controls.setRecordingState(false);
-      console.error('Microphone error:', err);
-      this.showToast('Microphone blocked · type a vibe or upload a clip', 4500);
-    }
-  }
-
   async handleFileUpload(file) {
     try {
       await this.ingestAudio(file, 'Clip');
@@ -374,7 +369,7 @@ class ChromajamApp {
     else if (this.tapTimes.length > 1) providedHint = 'drums';
 
     if (providedHint === 'prompt' && !promptText && !this.audioBase64) {
-      this.showToast('Type a vibe, hum or tap first');
+      this.showToast('Type a vibe, tap a rhythm, or upload a clip first');
       document.getElementById('prompt-input').focus();
       return;
     }

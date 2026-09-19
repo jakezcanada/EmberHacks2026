@@ -11,9 +11,10 @@ const STORAGE_KEY = 'chromajam_settings_v2';
  * vibration mapping. Choices persist in localStorage and override Gemini's.
  */
 export class SettingsManager {
-  constructor({ onVisualChange, onCalmChange }) {
+  constructor({ onVisualChange, onCalmChange, onAudioChange }) {
     this.onVisualChange = onVisualChange;
     this.onCalmChange = onCalmChange;
+    this.onAudioChange = onAudioChange;
     this.customizations = this.load();
     if (typeof this.customizations.calmMode === 'boolean') {
       safetyManager.setCalmMode(this.customizations.calmMode, true);
@@ -22,7 +23,7 @@ export class SettingsManager {
   }
 
   load() {
-    const defaults = { calmMode: null, instrumentColors: {}, instrumentShapes: {}, hapticPatterns: {} };
+    const defaults = { calmMode: null, fluctuations: true, instrumentColors: {}, instrumentShapes: {}, instrumentVolumes: {}, hapticPatterns: {} };
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) return { ...defaults, ...JSON.parse(stored) };
@@ -51,10 +52,18 @@ export class SettingsManager {
     const colors = { ...visual.instrument_colors, ...this.customizations.instrumentColors };
     const shapes = { ...visual.instrument_shapes, ...this.customizations.instrumentShapes };
     const haptics = { ...DEFAULT_HAPTICS, ...this.customizations.hapticPatterns };
+    const volumes = { ...this.customizations.instrumentVolumes };
 
     container.innerHTML = `
       <div class="access">
         <h3 class="sheet-heading">Motion safety</h3>
+        <div class="switch-row">
+          <button type="button" role="switch" id="fluctuations-toggle" class="switch" aria-checked="${this.customizations.fluctuations !== false}" aria-describedby="fluctuations-desc"><span aria-hidden="true"></span></button>
+          <div>
+            <p class="switch-label">Note fluctuations</p>
+            <p class="hint" id="fluctuations-desc">Allow live variations such as passing notes, octave jumps and ghost hits.</p>
+          </div>
+        </div>
         <div class="switch-row">
           <button type="button" role="switch" id="calm-toggle" class="switch" aria-checked="${safetyManager.calmMode}" aria-describedby="calm-desc"><span aria-hidden="true"></span></button>
           <div>
@@ -75,7 +84,7 @@ export class SettingsManager {
         <h3 class="sheet-heading">Instruments</h3>
         <p class="hint">Every instrument keeps a color, a shape and a line of its own. Your choices here override Gemini's.</p>
         <table class="mapping">
-          <thead><tr><th scope="col">Instrument</th><th scope="col">Color</th><th scope="col">Shape</th>${hapticController.isSupported ? '<th scope="col">Vibration</th>' : ''}</tr></thead>
+          <thead><tr><th scope="col">Instrument</th><th scope="col">Color</th><th scope="col">Shape</th><th scope="col">Volume</th>${hapticController.isSupported ? '<th scope="col">Vibration</th>' : ''}</tr></thead>
           <tbody>
             ${LANES.map((lane) => `
               <tr data-inst="${lane.id}">
@@ -84,6 +93,7 @@ export class SettingsManager {
                 <td><select data-kind="shape" aria-label="${lane.label} shape">
                   ${SHAPES.map((s) => `<option value="${s}" ${s === shapes[lane.id] ? 'selected' : ''}>${s}</option>`).join('')}
                 </select></td>
+                <td><input type="range" data-kind="volume" min="0" max="1" step="0.01" value="${volumes[lane.id] ?? 1}" aria-label="${lane.label} volume" /></td>
                 ${hapticController.isSupported ? `<td><select data-kind="haptic" aria-label="${lane.label} vibration">
                   ${Object.entries(HAPTIC_PRESETS).map(([k, p]) => `<option value="${k}" ${k === haptics[lane.id] ? 'selected' : ''}>${p.label}</option>`).join('')}
                 </select></td>` : ''}
@@ -95,6 +105,13 @@ export class SettingsManager {
     `;
 
     container.querySelector('#calm-toggle').addEventListener('click', () => this.setCalm(!safetyManager.calmMode));
+    container.querySelector('#fluctuations-toggle').addEventListener('click', (event) => {
+      const next = this.customizations.fluctuations === false;
+      this.customizations.fluctuations = next;
+      event.currentTarget.setAttribute('aria-checked', String(next));
+      this.save();
+      this.onAudioChange?.({ fluctuations: next, volumes: this.customizations.instrumentVolumes });
+    });
 
     container.querySelector('#haptics-toggle')?.addEventListener('click', (e) => {
       const next = !hapticController.isEnabled;
@@ -108,12 +125,14 @@ export class SettingsManager {
         const kind = input.dataset.kind;
         if (kind === 'color') this.customizations.instrumentColors[inst] = input.value;
         if (kind === 'shape') this.customizations.instrumentShapes[inst] = input.value;
+        if (kind === 'volume') this.customizations.instrumentVolumes[inst] = Number(input.value);
         if (kind === 'haptic') {
           this.customizations.hapticPatterns[inst] = input.value;
           hapticController.setChoice(inst, input.value);
         }
         this.save();
-        if (kind !== 'haptic') {
+        if (kind === 'volume') this.onAudioChange?.({ fluctuations: this.customizations.fluctuations !== false, volumes: this.customizations.instrumentVolumes });
+        if (kind !== 'haptic' && kind !== 'volume') {
           const row = input.closest('tr');
           const c = row.querySelector('[data-kind="color"]').value;
           const s = row.querySelector('[data-kind="shape"]').value;
@@ -124,10 +143,11 @@ export class SettingsManager {
     });
 
     container.querySelector('#reset-settings-btn').addEventListener('click', () => {
-      this.customizations = { calmMode: this.customizations.calmMode, instrumentColors: {}, instrumentShapes: {}, hapticPatterns: {} };
+      this.customizations = { calmMode: this.customizations.calmMode, fluctuations: true, instrumentColors: {}, instrumentShapes: {}, instrumentVolumes: {}, hapticPatterns: {} };
       hapticController.setChoices({});
       this.save();
       this.onVisualChange?.();
+      this.onAudioChange?.({ fluctuations: true, volumes: {} });
       this.render(container, this.visual);
       container.querySelector('#reset-settings-btn').focus();
     });

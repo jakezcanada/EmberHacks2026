@@ -416,6 +416,31 @@ blockquote.director-note { margin: 0 0 14px; padding-left: 14px; border-left: 1p
   background: var(--paper);
   font-size: 14px;
 }
+.mapping input[type='range'] {
+  width: 96px;
+  accent-color: var(--ink);
+  vertical-align: middle;
+}
+.mix-controls {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 18px;
+}
+.sheet-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.mix-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) minmax(120px, 1.8fr);
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.mix-row input[type='range'] { width: 100%; accent-color: var(--ink); }
 
 /* ---------- controls ---------- */
 

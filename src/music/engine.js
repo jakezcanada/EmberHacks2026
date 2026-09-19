@@ -38,6 +38,8 @@ class MusicEngine {
     this.playUserAudio = false;
     this.userAudioBuffer = null;
     this.userAudioPlayer = null;
+    this.fluctuationsEnabled = true;
+    this.instrumentVolumes = {};
   }
 
   async init() {
@@ -135,6 +137,21 @@ class MusicEngine {
     if (this.currentData?.analysis) this.currentData.analysis.tempo = this.bpm;
   }
 
+  setFluctuationsEnabled(enabled) {
+    this.fluctuationsEnabled = Boolean(enabled);
+    if (this.isPlaying) this.schedulePlayback();
+  }
+
+  setInstrumentVolumes(volumes = {}) {
+    this.instrumentVolumes = { ...volumes };
+    if (this.isPlaying) this.schedulePlayback();
+  }
+
+  volumeFor(instrument) {
+    const value = Number(this.instrumentVolumes[instrument]);
+    return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1;
+  }
+
   clearScheduled() {
     for (const id of this.scheduledIds) Tone.getTransport().clear(id);
     this.scheduledIds = [];
@@ -158,7 +175,7 @@ class MusicEngine {
     const { drums = {}, melody = [], bass = [], chords = [] } = song;
     const groove = song.groove || { swing: 0, humanize: 0 };
     // How much each pass of the loop is allowed to differ from the written part
-    const variation = Math.max(0, Math.min(1, groove.variation ?? 0.35));
+    const variation = this.fluctuationsEnabled ? Math.max(0, Math.min(1, groove.variation ?? 0.35)) : 0;
     const totalSteps = this.bars * 16;
     const totalBeats = this.bars * 4;
     const beatSec = () => 60 / this.bpm;
@@ -180,7 +197,7 @@ class MusicEngine {
 
         for (const lane of DRUM_LANES) {
           if (drums[lane]?.[step] === 1) {
-            const vel = Math.min(1, accent * velMultiplier);
+            const vel = Math.min(1, accent * velMultiplier * this.volumeFor(lane));
             kit.hit(lane, hitTime, vel, step);
             this.draw(hitTime, { instrument: lane, velocity: vel, time: hitTime, step });
           }
@@ -189,11 +206,11 @@ class MusicEngine {
         const ghostHat = !drums.hat?.[step] && step % 2 === 1 && Math.random() < variation * 0.14;
         const ghostSnare = !drums.snare?.[step] && !drums.kick?.[step] && Math.random() < variation * 0.05;
         if (ghostHat) {
-          kit.hit('hat', hitTime, 0.3, step);
+          kit.hit('hat', hitTime, 0.3 * this.volumeFor('hat'), step);
           this.draw(hitTime, { instrument: 'hat', velocity: 0.3, time: hitTime, step });
         }
         if (ghostSnare) {
-          kit.hit('snare', hitTime, 0.22);
+          kit.hit('snare', hitTime, 0.22 * this.volumeFor('snare'));
           this.draw(hitTime, { instrument: 'snare', velocity: 0.22, time: hitTime, step });
         }
       }, `0:0:${step}`);
@@ -215,7 +232,7 @@ class MusicEngine {
           pitch = Tone.Frequency(up).toMidi() <= 88 && Math.random() < 0.6 ? up : down;
         }
 
-        const vel = Math.min(1, note.vel * (0.85 + Math.random() * 0.25));
+        const vel = Math.min(1, note.vel * this.volumeFor('melody') * (this.fluctuationsEnabled ? 0.85 + Math.random() * 0.25 : 1));
         const durSec = note.dur * beatSec();
         const ornament = note.dur >= 0.5 && melodyPitches.length > 1 && Math.random() < variation * 0.3;
         const mainDur = ornament ? durSec / 2 : durSec;
@@ -226,7 +243,7 @@ class MusicEngine {
           const others = melodyPitches.filter((p) => p !== raw.pitch);
           const passing = others[Math.floor(Math.random() * others.length)];
           const t2 = time + mainDur;
-          this.voices.lead?.play(passing, mainDur, t2, vel * 0.85);
+          this.voices.lead?.play(passing, mainDur, t2, vel * 0.85 * this.volumeFor('melody'));
           this.draw(t2, { instrument: 'melody', pitch: passing, velocity: vel * 0.85, time: t2, start: raw.start + note.dur / 2, dur: note.dur / 2 });
         }
       }, beatToTime(note.start));
@@ -239,7 +256,7 @@ class MusicEngine {
       this.schedule((time) => {
         const pop = note.dur <= 0.5 && Math.random() < variation * 0.1;
         const pitch = pop ? transpose(note.pitch, 12) : note.pitch;
-        this.voices.bass?.play(pitch, note.dur * beatSec(), time, note.vel);
+        this.voices.bass?.play(pitch, note.dur * beatSec(), time, note.vel * this.volumeFor('bass'));
         this.draw(time, { instrument: 'bass', pitch: note.pitch, velocity: note.vel, time, start: raw.start, dur: note.dur });
       }, beatToTime(note.start));
     }
@@ -248,7 +265,7 @@ class MusicEngine {
     for (const chord of chords) {
       if (chord.start >= totalBeats || !chord.pitches?.length) continue;
       this.schedule((time) => {
-        const vel = (chord.vel ?? 0.6) * (0.9 + Math.random() * 0.15);
+        const vel = (chord.vel ?? 0.6) * this.volumeFor('chords') * (this.fluctuationsEnabled ? 0.9 + Math.random() * 0.15 : 1);
         this.voices.pad?.playChord(chord.pitches, chord.dur * beatSec(), time, vel);
         for (const p of chord.pitches) {
           this.draw(time, { instrument: 'chords', pitch: p, velocity: vel, time, start: chord.start, dur: chord.dur });
