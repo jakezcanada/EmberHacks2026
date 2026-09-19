@@ -51,7 +51,6 @@ class ChromajamApp {
     this.debugPanel = new DebugPanel(this.panels.io);
     this.settings = new SettingsManager({
       onVisualChange: () => this.refreshVisual(),
-      onCalmChange: (on) => this.syncCalmButton(on),
       onAudioChange: ({ fluctuations, volumes }) => {
         musicEngine.setFluctuationsEnabled(fluctuations);
         musicEngine.setInstrumentVolumes(volumes);
@@ -90,7 +89,6 @@ class ChromajamApp {
     });
 
     this.initTabs();
-    this.initMasthead();
     this.initKeyboard();
     this.initPaintBack();
 
@@ -137,7 +135,6 @@ class ChromajamApp {
     this.debugPanel.update({ ...meta, source, audioDuration: this.audioDuration });
     this.sourceState = [source === 'example' ? 'example' : meta?.fallback ? 'fallback' : 'live', this.sourceDetail(source, meta)];
     this.setSourceState(...this.sourceState);
-    this.syncCalmButton(safetyManager.calmMode);
     this.describeCanvas();
     if (autoplay && !musicEngine.isPlaying) musicEngine.play();
   }
@@ -203,19 +200,6 @@ class ChromajamApp {
       if (on && focus) tab.focus();
     }
     for (const [key, panel] of Object.entries(this.panels)) panel.hidden = key !== name;
-    document.getElementById('access-btn').setAttribute('aria-pressed', String(name === 'access'));
-  }
-
-  initMasthead() {
-    document.getElementById('calm-btn').addEventListener('click', () => this.settings.setCalm(!safetyManager.calmMode));
-    document.getElementById('access-btn').addEventListener('click', () => {
-      this.selectTab('access');
-      document.querySelector('.sheet').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
-  }
-
-  syncCalmButton(on) {
-    document.getElementById('calm-btn').setAttribute('aria-pressed', String(on));
   }
 
   showToast(msg, duration = 3200) {
